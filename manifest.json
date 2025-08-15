@@ -1,6 +1,6 @@
 {
-  "name": "Rename Kit",
-  "id": "rename-kit",
+  "name": "JustGo Rename Kit",
+  "id": "justgo-rename-kit",
   "api": "1.0.0",
   "main": "code.js",
   "ui": "ui.html",
