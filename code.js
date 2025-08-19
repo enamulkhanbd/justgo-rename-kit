@@ -1,18 +1,9 @@
 /**
- * Rename & Color Audit — Lean build
- * ---------------------------------
- * Keeps your original behavior 1:1:
- *  - Category = first segment of text style name (style.name.split('/')[0])
- *  - Rename text layer to mapping.newName for that category
- *  - Color audit:
- *      a) check boundVariables.fills[0] variable name
- *      b) if missing, fallback to fillStyleId name
- *  - Result: select mismatched layers and notify "N mismatched layers selected."
- *
- * Notes:
- *  - Uses async style/variable lookups and preloads each ID once (fast).
- *  - Skips invisible nodes; Figma won’t select locked/hidden nodes (that’s expected).
- *  - No optional chaining / no optional catch binding (parser-safe).
+ * Rename & Color Audit — Fixed counters
+ * -------------------------------------
+ * - Always reports how many text layers were renamed
+ * - Also reports how many default frames were renamed
+ * - Keeps your existing color audit + selection behavior
  */
 
 figma.showUI(__html__, { visible: false });
@@ -52,9 +43,10 @@ const stateColors = new Set([
 const styleCategories = {};
 for (const cat in categories) {
   const newName = categories[cat];
-  const color = cat === "highlighted"
-    ? [colorPaths.brand + cat, colorPaths.inverse + cat]
-    : [colorPaths.regular + cat, colorPaths.inverse + cat];
+  const color =
+    cat === "highlighted"
+      ? [colorPaths.brand + cat, colorPaths.inverse + cat]
+      : [colorPaths.regular + cat, colorPaths.inverse + cat];
   styleCategories[cat] = { newName, color };
 }
 
@@ -68,18 +60,26 @@ function isVisible(node) {
 function renameDefaultFramesIn(root) {
   let count = 0;
   if (root.type === "FRAME" && DEFAULT_FRAME_NAME_RE.test(root.name)) {
-    try { root.name = "item"; count++; } catch (e) {}
+    try {
+      root.name = "item";
+      count++;
+    } catch (e) {}
   }
   if ("findAll" in root) {
-    const frames = root.findAll(n => n.type === "FRAME" && isVisible(n) && DEFAULT_FRAME_NAME_RE.test(n.name));
+    const frames = root.findAll(
+      (n) => n.type === "FRAME" && isVisible(n) && DEFAULT_FRAME_NAME_RE.test(n.name)
+    );
     for (let i = 0; i < frames.length; i++) {
-      try { frames[i].name = "item"; count++; } catch (e) {}
+      try {
+        frames[i].name = "item";
+        count++;
+      } catch (e) {}
     }
   }
   return count;
 }
 
-// Fast text collection using native findAll (very performant)
+// Fast text collection
 function collectTextNodes(selection) {
   const texts = [];
   for (let i = 0; i < selection.length; i++) {
@@ -87,14 +87,14 @@ function collectTextNodes(selection) {
     if (!isVisible(root)) continue;
     if (root.type === "TEXT") texts.push(root);
     if ("findAll" in root) {
-      const found = root.findAll(n => n.type === "TEXT" && isVisible(n));
+      const found = root.findAll((n) => n.type === "TEXT" && isVisible(n));
       if (found && found.length) texts.push(...found);
     }
   }
   return texts;
 }
 
-// First bound variable id per your rule: fills[0] → "0" → string
+// First bound variable id per your rule: fills[0]
 function firstBoundFillVarId(node) {
   const bv = node.boundVariables && node.boundVariables.fills;
   if (!bv) return null;
@@ -120,13 +120,19 @@ async function preloadStyles(ids) {
   const unique = [];
   for (let i = 0; i < ids.length; i++) {
     const id = ids[i];
-    if (id && typeof id === "string" && !seen.has(id)) { seen.add(id); unique.push(id); }
+    if (id && typeof id === "string" && !seen.has(id)) {
+      seen.add(id);
+      unique.push(id);
+    }
   }
-  await Promise.all(unique.map(id =>
-    figma.getStyleByIdAsync(id)
-      .then(s => cache.set(id, s || null))
-      .catch(() => cache.set(id, null))
-  ));
+  await Promise.all(
+    unique.map((id) =>
+      figma
+        .getStyleByIdAsync(id)
+        .then((s) => cache.set(id, s || null))
+        .catch(() => cache.set(id, null))
+    )
+  );
   return cache;
 }
 
@@ -135,17 +141,27 @@ async function preloadVariables(ids) {
   const cache = new Map();
   const seen = new Set();
   const unique = [];
-  const hasVarApi = figma.variables && typeof figma.variables.getVariableByIdAsync === "function";
+  const hasVarApi =
+    figma.variables && typeof figma.variables.getVariableByIdAsync === "function";
   for (let i = 0; i < ids.length; i++) {
     const id = ids[i];
-    if (id && typeof id === "string" && !seen.has(id)) { seen.add(id); unique.push(id); }
+    if (id && typeof id === "string" && !seen.has(id)) {
+      seen.add(id);
+      unique.push(id);
+    }
   }
-  if (!hasVarApi) { for (let i = 0; i < unique.length; i++) cache.set(unique[i], null); return cache; }
-  await Promise.all(unique.map(id =>
-    figma.variables.getVariableByIdAsync(id)
-      .then(v => cache.set(id, v || null))
-      .catch(() => cache.set(id, null))
-  ));
+  if (!hasVarApi) {
+    for (let i = 0; i < unique.length; i++) cache.set(unique[i], null);
+    return cache;
+  }
+  await Promise.all(
+    unique.map((id) =>
+      figma.variables
+        .getVariableByIdAsync(id)
+        .then((v) => cache.set(id, v || null))
+        .catch(() => cache.set(id, null))
+    )
+  );
   return cache;
 }
 
@@ -161,10 +177,16 @@ async function main() {
 
   // 1) Quick frame rename & text collection
   let framesRenamed = 0;
-  for (let i = 0; i < selection.length; i++) framesRenamed += renameDefaultFramesIn(selection[i]);
+  for (let i = 0; i < selection.length; i++) {
+    framesRenamed += renameDefaultFramesIn(selection[i]);
+  }
   const textNodes = collectTextNodes(selection);
   if (textNodes.length === 0) {
-    figma.notify("No text layers found.");
+    const msg =
+      framesRenamed > 0
+        ? `${framesRenamed} frame${framesRenamed === 1 ? "" : "s"} renamed.`
+        : "No text layers found.";
+    figma.notify(msg);
     figma.closePlugin();
     return;
   }
@@ -184,26 +206,40 @@ async function main() {
   const staged = []; // { node, mapping }
   for (let i = 0; i < textNodes.length; i++) {
     const tn = textNodes[i];
-    const ts = (typeof tn.textStyleId === "string" && tn.textStyleId) ? styleCache.get(tn.textStyleId) : null;
+    const ts =
+      typeof tn.textStyleId === "string" && tn.textStyleId
+        ? styleCache.get(tn.textStyleId)
+        : null;
     if (!ts || ts.type !== "TEXT" || typeof ts.name !== "string") continue;
 
-    const category = ts.name.split("/")[0];       // original rule
+    const category = ts.name.split("/")[0]; // original rule
     const mapping = styleCategories[category];
     if (!mapping) continue;
 
-    if (tn.name !== mapping.newName) { try { tn.name = mapping.newName; renamed++; } catch (e) {} }
+    if (tn.name !== mapping.newName) {
+      try {
+        tn.name = mapping.newName;
+        renamed++;
+      } catch (e) {}
+    }
     staged.push({ node: tn, mapping });
   }
 
+  // If nothing matched your categories, still report frame/text renames (if any)
   if (staged.length === 0) {
-    figma.notify(renamed ? (renamed + " text layers renamed.") : "✨Eveything is perfect!");
+    const parts = [];
+    if (renamed > 0)
+      parts.push(`${renamed} text layer${renamed === 1 ? "" : "s"} renamed`);
+    if (framesRenamed > 0)
+      parts.push(`${framesRenamed} frame${framesRenamed === 1 ? "" : "s"} renamed`);
+    figma.notify(parts.length ? parts.join(". ") + "." : "✨ Everything is perfect!");
     figma.closePlugin();
     return;
   }
 
   // 4) Preload ONLY first-bound variable ids (your rule)
   const firstVarIds = [];
-  for (let i = 0; i < staged.length; i++) {
+  for (let i = 0; i = staged.length; i++) {
     const id0 = firstBoundFillVarId(staged[i].node);
     if (id0) firstVarIds.push(id0);
   }
@@ -219,23 +255,34 @@ async function main() {
     const id0 = firstBoundFillVarId(node);
     if (id0) {
       const variable = varCache.get(id0);
-      const vName = (variable && variable.name) ? variable.name : null;
+      const vName = variable && variable.name ? variable.name : null;
       if (vName && (expected.indexOf(vName) !== -1 || stateColors.has(vName))) ok = true;
     } else if (typeof node.fillStyleId === "string" && node.fillStyleId) {
       const fillStyle = styleCache.get(node.fillStyleId);
-      const fsName = (fillStyle && fillStyle.name) ? fillStyle.name : null;
+      const fsName = fillStyle && fillStyle.name ? fillStyle.name : null;
       if (fsName && (expected.indexOf(fsName) !== -1 || stateColors.has(fsName))) ok = true;
     }
 
     if (!ok) mismatched.push(node);
   }
 
-  // 6) Select & notify (simplified message)
+  // 6) Select & notify (ALWAYS include rename counts)
+  const parts = [];
+  if (renamed > 0)
+    parts.push(`${renamed} text layer${renamed === 1 ? "" : "s"} renamed`);
+  if (framesRenamed > 0)
+    parts.push(`${framesRenamed} frame${framesRenamed === 1 ? "" : "s"} renamed`);
+
   if (mismatched.length) {
-    try { figma.currentPage.selection = mismatched; } catch (e) {}
-    figma.notify(mismatched.length + " mismatched layer" + (mismatched.length === 1 ? "" : "s") + " selected.");
+    try {
+      figma.currentPage.selection = mismatched;
+    } catch (e) {}
+    const mis = `${mismatched.length} mismatched layer${
+      mismatched.length === 1 ? "" : "s"
+    } selected.`;
+    figma.notify(parts.length ? `${parts.join(". ")}. ${mis}` : mis);
   } else {
-    figma.notify("✨Eveything is perfect!");
+    figma.notify(parts.length ? `${parts.join(". ")}. ✨ Everything is perfect!` : "✨ Everything is perfect!");
   }
 
   figma.closePlugin();
