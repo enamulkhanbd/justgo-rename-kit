@@ -26,10 +26,10 @@ const colorPaths = {
 
 // Colors always allowed (never flagged mismatched)
 const stateColors = new Set([
-  "colors/state/info",
-  "colors/state/success",
-  "colors/state/warning",
-  "colors/state/error",
+  "colors/content/text/state/info",
+  "colors/content/text/state/success",
+  "colors/content/text/state/warning",
+  "colors/content/text/state/error",
   "colors/content/text/regular/disabled",
 ]);
 
