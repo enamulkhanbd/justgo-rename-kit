@@ -34,14 +34,21 @@ const stateColors = new Set([
 ]);
 
 // Build category → { newName, color[] }
+// Also Build Reverse Map: ColorName → Category (for fallback renaming)
 const styleCategories = {};
+const colorToCategory = new Map();
+
 for (const cat in categories) {
   const newName = categories[cat];
   const color =
     cat === "highlighted"
       ? [colorPaths.brand + cat, colorPaths.inverse + cat]
       : [colorPaths.regular + cat, colorPaths.inverse + cat];
+  
   styleCategories[cat] = { newName, color };
+  
+  // Populate reverse map
+  color.forEach(c => colorToCategory.set(c, cat));
 }
 
 /* ---------------- helpers ---------------- */
@@ -68,7 +75,6 @@ function renameDefaultFramesIn(root) {
   return count;
 }
 
-// Collect all visible TEXT nodes under current selection
 function collectTextNodes(selection) {
   const texts = [];
   for (let i = 0; i < selection.length; i++) {
@@ -84,7 +90,6 @@ function collectTextNodes(selection) {
   return texts;
 }
 
-// Return first bound fill variable id per your rule (fills[0])
 function firstBoundFillVarId(node) {
   const bv = node.boundVariables && node.boundVariables.fills;
   if (!bv) return null;
@@ -103,7 +108,6 @@ function firstBoundFillVarId(node) {
   return null;
 }
 
-// Batch-load styles into a cache (id → Style|null)
 async function preloadStyles(ids) {
   const cache = new Map();
   const seen = new Set();
@@ -126,7 +130,6 @@ async function preloadStyles(ids) {
   return cache;
 }
 
-// Batch-load variables into a cache (id → Variable|null)
 async function preloadVariables(ids) {
   const cache = new Map();
   const seen = new Set();
@@ -170,7 +173,7 @@ function makeCountsParts(textRenamed, framesRenamed) {
 /* ---------------- main ---------------- */
 
 async function main() {
-  if (HAS_RUN) return; // prevent double-execution
+  if (HAS_RUN) return;
   HAS_RUN = true;
 
   const selection = figma.currentPage.selection;
@@ -189,7 +192,6 @@ async function main() {
   // 2) Collect text nodes
   const textNodes = collectTextNodes(selection);
 
-  // If there are no text nodes, decide message now
   if (textNodes.length === 0) {
     const didRename = framesRenamed > 0;
     if (didRename) {
@@ -202,71 +204,99 @@ async function main() {
     return;
   }
 
-  // 3) Preload referenced styles (text + fill)
-  const textStyleIds = [];
-  const fillStyleIds = [];
+  // 3) Preload ALL Styles and Variables upfront (for smart detection)
+  const styleIds = [];
+  const variableIds = [];
+
   for (let i = 0; i < textNodes.length; i++) {
     const t = textNodes[i];
-    if (typeof t.textStyleId === "string" && t.textStyleId) textStyleIds.push(t.textStyleId);
-    if (typeof t.fillStyleId === "string" && t.fillStyleId) fillStyleIds.push(t.fillStyleId);
+    if (typeof t.textStyleId === "string" && t.textStyleId) styleIds.push(t.textStyleId);
+    if (typeof t.fillStyleId === "string" && t.fillStyleId) styleIds.push(t.fillStyleId);
+    
+    const varId = firstBoundFillVarId(t);
+    if (varId) variableIds.push(varId);
   }
-  const styleCache = await preloadStyles([].concat(textStyleIds, fillStyleIds));
 
-  // 4) Rename text layers based on style category
+  const styleCache = await preloadStyles(styleIds);
+  const varCache = await preloadVariables(variableIds);
+
+  // 4) Rename & Audit
   let textRenamed = 0;
-  const staged = []; // { node, mapping }
+  let mismatched = [];
+
   for (let i = 0; i < textNodes.length; i++) {
     const tn = textNodes[i];
+    let category = null;
+    let method = null; // 'text-style' or 'color-fallback'
 
+    // Strategy A: Try Text Style Name
     const ts =
       typeof tn.textStyleId === "string" && tn.textStyleId
         ? styleCache.get(tn.textStyleId)
         : null;
 
-    if (!ts || ts.type !== "TEXT" || typeof ts.name !== "string") continue;
+    if (ts && ts.type === "TEXT" && typeof ts.name === "string") {
+      const prefix = ts.name.split("/")[0];
+      if (styleCategories[prefix]) {
+        category = prefix;
+        method = 'text-style';
+      }
+    }
 
-    const category = ts.name.split("/")[0]; // prefix before '/'
+    // Strategy B: Fallback - Try Color (Variable or Style) if Text Style is missing/invalid
+    if (!category) {
+        // Check Variable
+        const varId = firstBoundFillVarId(tn);
+        if (varId) {
+            const v = varCache.get(varId);
+            if (v && v.name && colorToCategory.has(v.name)) {
+                category = colorToCategory.get(v.name);
+                method = 'color-fallback';
+            }
+        }
+        // Check Fill Style
+        else if (typeof tn.fillStyleId === "string" && tn.fillStyleId) {
+            const fs = styleCache.get(tn.fillStyleId);
+            if (fs && fs.name && colorToCategory.has(fs.name)) {
+                category = colorToCategory.get(fs.name);
+                method = 'color-fallback';
+            }
+        }
+    }
+
+    // If we still found no category, we simply skip (DON'T FLAG AS MISMATCH)
+    if (!category) continue;
+
     const mapping = styleCategories[category];
-    if (!mapping) continue;
 
+    // Rename Logic
     if (tn.name !== mapping.newName) {
       try { tn.name = mapping.newName; textRenamed++; } catch (e) {}
     }
-    staged.push({ node: tn, mapping });
-  }
 
-  // 5) Color audit only if we have staged nodes
-  let mismatched = [];
-  if (staged.length > 0) {
-    const firstVarIds = [];
-    for (let i = 0; i < staged.length; i++) {
-      const id0 = firstBoundFillVarId(staged[i].node);
-      if (id0) firstVarIds.push(id0);
-    }
-    const varCache = await preloadVariables(firstVarIds);
+    // Color Audit Logic
+    // Only audit if we matched via Text Style. 
+    // If we matched via Color (Fallback), the color is by definition correct.
+    if (method === 'text-style') {
+        const expected = mapping.color;
+        let ok = false;
+        
+        const id0 = firstBoundFillVarId(tn);
+        if (id0) {
+            const variable = varCache.get(id0);
+            const vName = variable && variable.name ? variable.name : null;
+            if (vName && (expected.indexOf(vName) !== -1 || stateColors.has(vName))) ok = true;
+        } else if (typeof tn.fillStyleId === "string" && tn.fillStyleId) {
+            const fillStyle = styleCache.get(tn.fillStyleId);
+            const fsName = fillStyle && fillStyle.name ? fillStyle.name : null;
+            if (fsName && (expected.indexOf(fsName) !== -1 || stateColors.has(fsName))) ok = true;
+        }
 
-    for (let i = 0; i < staged.length; i++) {
-      const node = staged[i].node;
-      const expected = staged[i].mapping.color; // array of allowed names
-      let ok = false;
-
-      // Prefer variable (fills[0]) if present
-      const id0 = firstBoundFillVarId(node);
-      if (id0) {
-        const variable = varCache.get(id0);
-        const vName = variable && variable.name ? variable.name : null;
-        if (vName && (expected.indexOf(vName) !== -1 || stateColors.has(vName))) ok = true;
-      } else if (typeof node.fillStyleId === "string" && node.fillStyleId) {
-        const fillStyle = styleCache.get(node.fillStyleId);
-        const fsName = fillStyle && fillStyle.name ? fillStyle.name : null;
-        if (fsName && (expected.indexOf(fsName) !== -1 || stateColors.has(fsName))) ok = true;
-      }
-
-      if (!ok) mismatched.push(node);
+        if (!ok) mismatched.push(tn);
     }
   }
 
-  // 6) Select & notify — EXACTLY ONE bubble with correct content
+  // 5) Final Notify
   const didRename = textRenamed > 0 || framesRenamed > 0;
   const hasMismatches = mismatched.length > 0;
   const countsParts = makeCountsParts(textRenamed, framesRenamed);
