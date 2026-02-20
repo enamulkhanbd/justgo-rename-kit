@@ -20,6 +20,9 @@ Rename Kit offers three core features to keep your design files tidy and consist
    - Intelligently identifies and selects any text layers that are using a Color Style or Variable that doesn't align with the rules defined for its Text Style.
    - Makes it incredibly easy to spot and fix design inconsistencies.
 
+4. **Relaunch Button Support**
+   - After a run, tagged nodes expose a relaunch button so you can rerun Rename Kit directly from the properties panel.
+
 ---
 
 ## 🛠️ How to Use
@@ -28,6 +31,7 @@ Rename Kit offers three core features to keep your design files tidy and consist
    - In your Figma file, select one or more frames, groups, or layers you want to clean up.
 2. **Run the Plugin**
    - Go to `Plugins > Rename Kit`.
+   - After the first run, select a tagged layer and use the relaunch button `Run Rename Kit` in the right-side properties panel.
    - Or use Figma's Quick Actions (`⌘ + /` or `Ctrl + /`) and type "Rename Kit".
 3. **Review the Results**
    - A notification will appear summarizing the changes (e.g., number of frames and text layers renamed).

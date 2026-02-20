@@ -4,6 +4,7 @@ figma.skipInvisibleInstanceChildren = true;
 let HAS_RUN = false; // run-once guard
 
 const DEFAULT_FRAME_NAME_RE = /^Frame( \d+)?$/;
+const RELAUNCH_COMMAND = "run-rename-kit";
 
 // Style-category → new layer name
 const categories = {
@@ -170,6 +171,19 @@ function makeCountsParts(textRenamed, framesRenamed) {
   return parts;
 }
 
+function setRelaunchForNodes(nodes) {
+  const seen = new Set();
+  for (let i = 0; i < nodes.length; i++) {
+    const node = nodes[i];
+    if (!node || typeof node.setRelaunchData !== "function") continue;
+    if (node.id && seen.has(node.id)) continue;
+    if (node.id) seen.add(node.id);
+    try {
+      node.setRelaunchData({ [RELAUNCH_COMMAND]: "" });
+    } catch (e) {}
+  }
+}
+
 /* ---------------- main ---------------- */
 
 async function main() {
@@ -177,11 +191,21 @@ async function main() {
   HAS_RUN = true;
 
   const selection = figma.currentPage.selection;
+  if (figma.currentPage && typeof figma.currentPage.setRelaunchData === "function") {
+    try {
+      figma.currentPage.setRelaunchData({
+        [RELAUNCH_COMMAND]: "",
+      });
+    } catch (e) {}
+  }
+
   if (!selection || selection.length === 0) {
     figma.notify("Select at least one frame or text layer.");
     figma.closePlugin();
     return;
   }
+
+  setRelaunchForNodes(selection);
 
   // 1) Rename default frames → "item"
   let framesRenamed = 0;
@@ -302,6 +326,7 @@ async function main() {
   const countsParts = makeCountsParts(textRenamed, framesRenamed);
 
   if (hasMismatches) {
+    setRelaunchForNodes(mismatched);
     try { figma.currentPage.selection = mismatched; } catch (e) {}
     const mis = `${mismatched.length} mismatched layer${mismatched.length === 1 ? "" : "s"} selected.`;
     const msg = countsParts.length ? `${countsParts.join(". ")}. ${mis}` : mis;
