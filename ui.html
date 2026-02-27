@@ -1,8 +1,849 @@
-<!DOCTYPE html>
-<html>
-<body>
-  <script>
-    parent.postMessage({ pluginMessage: { type: 'rename-unnamed-fonts' } }, '*');
-  </script>
-</body>
+﻿<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Rename Kit Settings</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+      }
+
+      body {
+        margin: 0;
+        padding: 16px;
+        font: 12px/1.4 "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        overflow: auto;
+      }
+
+      form {
+        display: grid;
+        gap: 8px;
+      }
+
+      .setting-accordion {
+        margin: 0;
+        border: 0;
+        border-bottom: 1px solid rgba(128, 128, 128, 0.4);
+        padding: 0 0 10px;
+      }
+
+      .setting-accordion:last-of-type {
+        border-bottom: 0;
+        padding-bottom: 0;
+      }
+
+      .setting-summary {
+        cursor: pointer;
+        font-weight: 600;
+        list-style: none;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .setting-summary::-webkit-details-marker {
+        display: none;
+      }
+
+      .setting-summary::before {
+        content: "+";
+        width: 12px;
+        text-align: center;
+        opacity: 0.8;
+      }
+
+      .setting-accordion[open] .setting-summary::before {
+        content: "-";
+      }
+
+      .setting-body {
+        margin-top: 8px;
+        display: grid;
+        gap: 10px;
+      }
+
+      label {
+        display: grid;
+        gap: 4px;
+        margin-bottom: 8px;
+      }
+
+      input,
+      select,
+      button {
+        font: inherit;
+      }
+
+      input,
+      select {
+        width: 100%;
+        box-sizing: border-box;
+        height: 32px;
+        border: 1px solid rgba(128, 128, 128, 0.55);
+        border-radius: 6px;
+        padding: 0 8px;
+        background: transparent;
+        color: inherit;
+      }
+
+      .hint {
+        margin: 4px 0 0;
+        font-size: 11px;
+        opacity: 0.8;
+      }
+
+      .error-text {
+        margin: 4px 0 0;
+        font-size: 11px;
+        color: #d93025;
+      }
+
+      .required-asterisk {
+        color: #d93025;
+        font-weight: 600;
+      }
+
+      .actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+      }
+
+      .rule-editor-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin: 8px 0 6px;
+      }
+
+      .rules-list {
+        display: grid;
+        gap: 8px;
+      }
+
+      .rule-row {
+        display: grid;
+        grid-template-columns: max-content 1fr auto;
+        gap: 8px;
+        align-items: end;
+      }
+
+      .rule-row label {
+        margin-bottom: 0;
+      }
+
+      .rule-layer-name {
+        width: auto;
+        min-width: 8ch;
+      }
+
+      .rule-row button {
+        white-space: nowrap;
+      }
+
+      .allowed-colors-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin: 8px 0 6px;
+      }
+
+      .allowed-colors-list {
+        display: grid;
+        gap: 8px;
+      }
+
+      .allowed-color-row {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 8px;
+        align-items: end;
+      }
+
+      .allowed-color-row label {
+        margin-bottom: 0;
+      }
+
+      .icon-delete {
+        width: 32px;
+        min-width: 32px;
+        height: 32px;
+        min-height: 32px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        font-weight: 700;
+        line-height: 1;
+        transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+      }
+
+      .icon-delete svg {
+        width: 20px;
+        height: 20px;
+        display: block;
+        fill: currentColor;
+        pointer-events: none;
+      }
+
+      .icon-delete:hover,
+      .icon-delete:focus-visible {
+        background: rgba(217, 48, 37, 0.14);
+        border-color: #d93025;
+        color: #d93025;
+      }
+
+      #add-rule,
+      #add-allowed-color,
+      #save-settings {
+        background: #0d99ff;
+        border-color: #0d99ff;
+        color: #ffffff;
+      }
+
+      #add-rule:hover,
+      #add-rule:focus-visible,
+      #add-allowed-color:hover,
+      #add-allowed-color:focus-visible,
+      #save-settings:hover,
+      #save-settings:focus-visible {
+        background: #0b8de3;
+        border-color: #0b8de3;
+        color: #ffffff;
+      }
+
+      #add-rule:active,
+      #add-allowed-color:active,
+      #save-settings:active {
+        background: #0a7fd1;
+        border-color: #0a7fd1;
+        color: #ffffff;
+      }
+
+      .input-error {
+        border-color: #d93025 !important;
+      }
+
+      .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.42);
+        display: grid;
+        place-items: center;
+        padding: 16px;
+        z-index: 999;
+      }
+
+      .modal-backdrop[hidden] {
+        display: none;
+      }
+
+      .modal {
+        width: min(320px, 100%);
+        border: 1px solid rgba(128, 128, 128, 0.45);
+        border-radius: 10px;
+        background: Canvas;
+        color: CanvasText;
+        padding: 14px;
+        box-sizing: border-box;
+      }
+
+      .modal-title {
+        margin: 0;
+        font-size: 13px;
+        font-weight: 600;
+      }
+
+      .modal-text {
+        margin: 8px 0 0;
+        font-size: 12px;
+        opacity: 0.9;
+      }
+
+      .modal-actions {
+        margin-top: 12px;
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+      }
+
+      .danger-button {
+        background: #d93025;
+        border-color: #d93025;
+        color: #ffffff;
+      }
+
+      .danger-button:hover,
+      .danger-button:focus-visible {
+        background: #c6281e;
+        border-color: #c6281e;
+        color: #ffffff;
+      }
+
+      button {
+        box-sizing: border-box;
+        height: 32px;
+        border: 1px solid rgba(128, 128, 128, 0.55);
+        border-radius: 6px;
+        padding: 0 12px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 500;
+        background: transparent;
+        color: inherit;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <form id="settings-form">
+      <details class="setting-accordion" open>
+        <summary class="setting-summary">Rename and detection rules</summary>
+        <div class="setting-body">
+          <div class="rule-editor-head">
+            <button type="button" id="add-rule">Add New</button>
+          </div>
+          <div id="rename-rules" class="rules-list"></div>
+          <p class="hint">
+            Layer name and path are mandatory. Add full token path. Last path segment is used as style prefix match.
+          </p>
+          <p id="rename-rules-error" class="error-text" hidden>
+            Duplicate path found. Each rename rule path must be unique.
+          </p>
+        </div>
+      </details>
+
+      <details class="setting-accordion">
+        <summary class="setting-summary">Never flag these color paths</summary>
+        <div class="setting-body">
+          <div class="allowed-colors-head">
+            <button type="button" id="add-allowed-color">Add New</button>
+          </div>
+          <div id="always-allowed-list" class="allowed-colors-list"></div>
+          <p class="hint">Path is mandatory. Add paths that should never be flagged as mismatched.</p>
+        </div>
+      </details>
+
+      <div class="actions">
+        <button type="button" id="cancel">Cancel</button>
+        <button type="submit" id="save-settings">Update</button>
+      </div>
+    </form>
+
+    <div id="delete-confirm-modal" class="modal-backdrop" hidden>
+      <div
+        class="modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="delete-modal-title"
+        aria-describedby="delete-modal-text"
+      >
+        <h2 id="delete-modal-title" class="modal-title">Delete item?</h2>
+        <p id="delete-modal-text" class="modal-text">This action cannot be undone.</p>
+        <div class="modal-actions">
+          <button type="button" id="delete-modal-cancel">Cancel</button>
+          <button type="button" id="delete-modal-confirm" class="danger-button">Delete</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Compatibility shim for older cached handlers that still reference this name.
+      var alwaysAllowedInput = { value: "" };
+      function renderCorePaths() {}
+
+      const form = document.getElementById("settings-form");
+      const cancelButton = document.getElementById("cancel");
+      const addRuleButton = document.getElementById("add-rule");
+      const renameRulesContainer = document.getElementById("rename-rules");
+      const renameRulesError = document.getElementById("rename-rules-error");
+      const addAllowedColorButton = document.getElementById("add-allowed-color");
+      const alwaysAllowedColorsContainer = document.getElementById("always-allowed-list");
+      const settingAccordions = document.querySelectorAll(".setting-accordion");
+      const MIN_LAYER_NAME_SIZE = 8;
+      const MAX_LAYER_NAME_SIZE = "highlighted-text".length;
+      const deleteConfirmModal = document.getElementById("delete-confirm-modal");
+      const deleteModalText = document.getElementById("delete-modal-text");
+      const deleteModalCancelButton = document.getElementById("delete-modal-cancel");
+      const deleteModalConfirmButton = document.getElementById("delete-modal-confirm");
+      let deleteConfirmResolver = null;
+      let deleteConfirmReturnFocus = null;
+
+      function createTrashIcon() {
+        const ns = "http://www.w3.org/2000/svg";
+        const svg = document.createElementNS(ns, "svg");
+        svg.setAttribute("viewBox", "0 0 24 24");
+        svg.setAttribute("aria-hidden", "true");
+        const path = document.createElementNS(ns, "path");
+        path.setAttribute(
+          "d",
+          "M9 3a1 1 0 0 0-1 1v1H5a1 1 0 1 0 0 2h1l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12h1a1 1 0 1 0 0-2h-3V4a1 1 0 0 0-1-1H9zm1 2h4v1h-4V5zm-1 3h6l-.92 11H9.92L9 8z"
+        );
+        svg.appendChild(path);
+        return svg;
+      }
+
+      for (let i = 0; i < settingAccordions.length; i++) {
+        const accordion = settingAccordions[i];
+        accordion.addEventListener("toggle", () => {
+          if (!accordion.open) return;
+          for (let j = 0; j < settingAccordions.length; j++) {
+            const other = settingAccordions[j];
+            if (other !== accordion) {
+              other.open = false;
+            }
+          }
+        });
+      }
+
+      function normalizePathForDuplicateCheck(value) {
+        let next = String(value || "").trim().toLowerCase();
+        while (next.length > 0 && next.charAt(next.length - 1) === "/") {
+          next = next.slice(0, next.length - 1);
+        }
+        return next;
+      }
+
+      function hasInputValue(input) {
+        return input instanceof HTMLInputElement && input.value.trim().length > 0;
+      }
+
+      function closeDeleteConfirm(confirmed) {
+        if (deleteConfirmModal) {
+          deleteConfirmModal.hidden = true;
+        }
+        if (deleteConfirmResolver) {
+          const resolver = deleteConfirmResolver;
+          deleteConfirmResolver = null;
+          resolver(confirmed);
+        }
+        if (deleteConfirmReturnFocus) {
+          try {
+            deleteConfirmReturnFocus.focus();
+          } catch (_) {}
+          deleteConfirmReturnFocus = null;
+        }
+      }
+
+      function confirmDelete(message, triggerElement) {
+        return new Promise((resolve) => {
+          if (!deleteConfirmModal || !deleteModalText) {
+            resolve(window.confirm(message));
+            return;
+          }
+
+          if (deleteConfirmResolver) {
+            const previous = deleteConfirmResolver;
+            deleteConfirmResolver = null;
+            previous(false);
+          }
+
+          deleteConfirmResolver = resolve;
+          deleteConfirmReturnFocus = triggerElement || null;
+          deleteModalText.textContent = message || "This action cannot be undone.";
+          deleteConfirmModal.hidden = false;
+          requestAnimationFrame(() => {
+            try {
+              deleteModalConfirmButton.focus({ preventScroll: true });
+            } catch (_) {
+              deleteModalConfirmButton.focus();
+            }
+          });
+        });
+      }
+
+      function validateDuplicateRulePaths() {
+        const pathInputs = renameRulesContainer.querySelectorAll(".rule-path");
+        const seen = new Map();
+        const duplicateInputs = new Set();
+
+        for (let i = 0; i < pathInputs.length; i++) {
+          const input = pathInputs[i];
+          input.classList.remove("input-error");
+          input.setCustomValidity("");
+        }
+
+        for (let i = 0; i < pathInputs.length; i++) {
+          const input = pathInputs[i];
+          const key = normalizePathForDuplicateCheck(input.value);
+          if (!key) continue;
+          if (seen.has(key)) {
+            duplicateInputs.add(input);
+            duplicateInputs.add(seen.get(key));
+          } else {
+            seen.set(key, input);
+          }
+        }
+
+        duplicateInputs.forEach((input) => {
+          input.classList.add("input-error");
+          input.setCustomValidity("Duplicate path");
+        });
+
+        if (renameRulesError) {
+          renameRulesError.hidden = duplicateInputs.size === 0;
+        }
+        return duplicateInputs.size > 0;
+      }
+
+      function syncAllLayerNameInputSizes() {
+        const inputs = renameRulesContainer.querySelectorAll(".rule-layer-name");
+        let maxSize = MIN_LAYER_NAME_SIZE;
+        for (let i = 0; i < inputs.length; i++) {
+          const input = inputs[i];
+          if (!(input instanceof HTMLInputElement)) continue;
+          const sample = input.value || input.placeholder || "";
+          maxSize = Math.max(maxSize, sample.length + 1);
+        }
+        maxSize = Math.min(maxSize, MAX_LAYER_NAME_SIZE);
+        for (let i = 0; i < inputs.length; i++) {
+          const input = inputs[i];
+          if (!(input instanceof HTMLInputElement)) continue;
+          input.size = maxSize;
+        }
+      }
+
+      function createRuleRow(entry) {
+        const row = document.createElement("div");
+        row.className = "rule-row";
+
+        const layerLabel = document.createElement("label");
+        const layerLabelText = document.createElement("span");
+        layerLabelText.textContent = "Layer name ";
+        const layerRequired = document.createElement("span");
+        layerRequired.className = "required-asterisk";
+        layerRequired.textContent = "*";
+        layerLabelText.appendChild(layerRequired);
+        layerLabel.appendChild(layerLabelText);
+        const layerInput = document.createElement("input");
+        layerInput.type = "text";
+        layerInput.className = "rule-layer-name";
+        layerInput.required = true;
+        layerInput.placeholder = "heading-text";
+        layerInput.value = (entry && entry.newName) || "";
+        layerInput.addEventListener("input", () => {
+          syncAllLayerNameInputSizes();
+        });
+        layerLabel.appendChild(layerInput);
+
+        const pathLabel = document.createElement("label");
+        const pathLabelText = document.createElement("span");
+        pathLabelText.textContent = "Path ";
+        const pathRequired = document.createElement("span");
+        pathRequired.className = "required-asterisk";
+        pathRequired.textContent = "*";
+        pathLabelText.appendChild(pathRequired);
+        pathLabel.appendChild(pathLabelText);
+        const pathInput = document.createElement("input");
+        pathInput.type = "text";
+        pathInput.className = "rule-path";
+        pathInput.required = true;
+        pathInput.placeholder = "colors/content/text/regular/heading";
+        pathInput.value = (entry && entry.path) || "";
+        pathLabel.appendChild(pathInput);
+
+        const removeButton = document.createElement("button");
+        removeButton.type = "button";
+        removeButton.className = "icon-delete";
+        removeButton.appendChild(createTrashIcon());
+        removeButton.title = "Delete";
+        removeButton.setAttribute("aria-label", "Delete rule");
+        removeButton.addEventListener("click", async (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          const hasLayerNameValue = hasInputValue(layerInput);
+          const hasPathValue = hasInputValue(pathInput);
+          if (!hasLayerNameValue && !hasPathValue) {
+            row.remove();
+            syncAllLayerNameInputSizes();
+            validateDuplicateRulePaths();
+            return;
+          }
+          const confirmed = await confirmDelete(
+            "Delete this rename and detection rule?",
+            removeButton
+          );
+          if (!confirmed) return;
+          row.remove();
+          syncAllLayerNameInputSizes();
+          validateDuplicateRulePaths();
+        });
+
+        row.appendChild(layerLabel);
+        row.appendChild(pathLabel);
+        row.appendChild(removeButton);
+        return row;
+      }
+
+      function renderRenameRules(entries) {
+        renameRulesContainer.innerHTML = "";
+        const list = Array.isArray(entries) ? entries : [];
+        for (let i = 0; i < list.length; i++) {
+          renameRulesContainer.appendChild(createRuleRow(list[i]));
+        }
+        syncAllLayerNameInputSizes();
+        validateDuplicateRulePaths();
+      }
+
+      function collectRenameRules() {
+        const rows = renameRulesContainer.querySelectorAll(".rule-row");
+        const result = [];
+        let hasIncompleteRow = false;
+        const seen = new Set();
+
+        for (let i = 0; i < rows.length; i++) {
+          const row = rows[i];
+          const nameEl = row.querySelector(".rule-layer-name");
+          const pathEl = row.querySelector(".rule-path");
+          const newName = nameEl ? nameEl.value.trim() : "";
+          const path = pathEl ? pathEl.value.trim() : "";
+
+          if (!path && !newName) continue;
+          if (!path || !newName) {
+            hasIncompleteRow = true;
+            continue;
+          }
+
+          const key = path.toLowerCase();
+          if (seen.has(key)) continue;
+          seen.add(key);
+          result.push({ newName, path });
+        }
+
+        return { result, hasIncompleteRow };
+      }
+
+      function normalizeAlwaysAllowedColorEntry(entry) {
+        if (typeof entry === "string") {
+          const value = entry.trim();
+          if (!value) return { name: "", color: "" };
+          return { name: value, color: value };
+        }
+
+        const next = entry && typeof entry === "object" ? entry : {};
+        const name = typeof next.name === "string" ? next.name.trim() : "";
+        const color =
+          typeof next.color === "string"
+            ? next.color.trim()
+            : typeof next.value === "string"
+              ? next.value.trim()
+              : typeof next.path === "string"
+                ? next.path.trim()
+                : "";
+        return { name, color };
+      }
+
+      function createAlwaysAllowedColorRow(entry) {
+        const normalized = normalizeAlwaysAllowedColorEntry(entry);
+        const row = document.createElement("div");
+        row.className = "allowed-color-row";
+
+        const colorLabel = document.createElement("label");
+        const colorLabelText = document.createElement("span");
+        colorLabelText.textContent = "Path ";
+        const colorRequired = document.createElement("span");
+        colorRequired.className = "required-asterisk";
+        colorRequired.textContent = "*";
+        colorLabelText.appendChild(colorRequired);
+        colorLabel.appendChild(colorLabelText);
+        const colorInput = document.createElement("input");
+        colorInput.type = "text";
+        colorInput.className = "allowed-color-value";
+        colorInput.required = true;
+        colorInput.placeholder = "colors/content/text/state/info";
+        colorInput.value = normalized.color;
+        colorLabel.appendChild(colorInput);
+
+        const removeButton = document.createElement("button");
+        removeButton.type = "button";
+        removeButton.className = "icon-delete";
+        removeButton.appendChild(createTrashIcon());
+        removeButton.title = "Delete";
+        removeButton.setAttribute("aria-label", "Delete color");
+        removeButton.addEventListener("click", async (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          if (!hasInputValue(colorInput)) {
+            row.remove();
+            return;
+          }
+          const confirmed = await confirmDelete(
+            "Delete this never-flag color path?",
+            removeButton
+          );
+          if (!confirmed) return;
+          row.remove();
+        });
+
+        row.appendChild(colorLabel);
+        row.appendChild(removeButton);
+        return row;
+      }
+
+      function renderAlwaysAllowedColors(values) {
+        alwaysAllowedColorsContainer.innerHTML = "";
+        const list = Array.isArray(values) ? values : [];
+        for (let i = 0; i < list.length; i++) {
+          alwaysAllowedColorsContainer.appendChild(createAlwaysAllowedColorRow(list[i]));
+        }
+      }
+
+      function collectAlwaysAllowedColors() {
+        const rows = alwaysAllowedColorsContainer.querySelectorAll(".allowed-color-row");
+        const result = [];
+        const seen = new Set();
+        let hasIncompleteRow = false;
+
+        for (let i = 0; i < rows.length; i++) {
+          const row = rows[i];
+          const colorEl = row.querySelector(".allowed-color-value");
+          const color = colorEl ? colorEl.value.trim() : "";
+          if (!color) {
+            hasIncompleteRow = true;
+            continue;
+          }
+          const key = color.toLowerCase();
+          if (seen.has(key)) continue;
+          seen.add(key);
+          result.push(color);
+        }
+
+        return { result, hasIncompleteRow };
+      }
+
+      function requestInitialSettings() {
+        parent.postMessage(
+          {
+            pluginMessage: {
+              type: "settings-ui-ready",
+            },
+          },
+          "*"
+        );
+      }
+
+      function focusNewInput(row, selector) {
+        const input = row.querySelector(selector);
+        if (!(input instanceof HTMLInputElement)) return;
+        row.scrollIntoView({ block: "start" });
+        requestAnimationFrame(() => {
+          const scroller = document.scrollingElement || document.documentElement;
+          if (scroller) {
+            scroller.scrollTop = Math.max(0, scroller.scrollTop - 32);
+          }
+          try {
+            input.focus({ preventScroll: true });
+          } catch (_) {
+            input.focus();
+          }
+        });
+      }
+
+      window.onmessage = (event) => {
+        const message = event.data && event.data.pluginMessage;
+        if (!message || message.type !== "init-settings") return;
+
+        const payload = message.payload || {};
+        renderRenameRules(payload.renameRules || []);
+        renderAlwaysAllowedColors(payload.alwaysAllowedColors || []);
+      };
+
+      requestInitialSettings();
+
+      addRuleButton.addEventListener("click", () => {
+        const row = createRuleRow({ newName: "", path: "" });
+        renameRulesContainer.appendChild(row);
+        syncAllLayerNameInputSizes();
+        validateDuplicateRulePaths();
+        focusNewInput(row, ".rule-path");
+      });
+
+      renameRulesContainer.addEventListener("input", (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLInputElement)) return;
+        if (target.classList.contains("rule-path")) {
+          validateDuplicateRulePaths();
+        }
+        if (target.classList.contains("rule-layer-name")) {
+          syncAllLayerNameInputSizes();
+        }
+      });
+
+      addAllowedColorButton.addEventListener("click", () => {
+        const row = createAlwaysAllowedColorRow({ name: "", color: "" });
+        alwaysAllowedColorsContainer.appendChild(row);
+        focusNewInput(row, ".allowed-color-value");
+      });
+
+      if (deleteModalCancelButton) {
+        deleteModalCancelButton.addEventListener("click", () => {
+          closeDeleteConfirm(false);
+        });
+      }
+
+      if (deleteModalConfirmButton) {
+        deleteModalConfirmButton.addEventListener("click", () => {
+          closeDeleteConfirm(true);
+        });
+      }
+
+      if (deleteConfirmModal) {
+        deleteConfirmModal.addEventListener("click", (event) => {
+          if (event.target === deleteConfirmModal) {
+            closeDeleteConfirm(false);
+          }
+        });
+      }
+
+      window.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && deleteConfirmModal && !deleteConfirmModal.hidden) {
+          event.preventDefault();
+          closeDeleteConfirm(false);
+        }
+      });
+
+      cancelButton.addEventListener("click", () => {
+        parent.postMessage({ pluginMessage: { type: "cancel-settings" } }, "*");
+      });
+
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const renameRules = collectRenameRules();
+        const alwaysAllowedColors = collectAlwaysAllowedColors();
+        if (validateDuplicateRulePaths()) {
+          window.alert("Duplicate path found in rename rules. Please fix it first.");
+          return;
+        }
+        if (renameRules.hasIncompleteRow) {
+          window.alert("Each rename rule row must include both layer name and path.");
+          return;
+        }
+        if (renameRules.result.length === 0) {
+          window.alert("Add at least one rename rule.");
+          return;
+        }
+        if (alwaysAllowedColors.hasIncompleteRow) {
+          window.alert("Each never-flag row must include a path.");
+          return;
+        }
+
+        parent.postMessage(
+          {
+            pluginMessage: {
+              type: "save-settings",
+              payload: {
+                renameRules: renameRules.result,
+                alwaysAllowedColors: alwaysAllowedColors.result,
+              },
+            },
+          },
+          "*"
+        );
+      });
+    </script>
+  </body>
 </html>
+

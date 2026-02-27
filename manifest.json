@@ -5,6 +5,19 @@
   "main": "code.js",
   "ui": "ui.html",
   "editorType": ["figma"],
+  "menu": [
+    {
+      "name": "Run Rename Kit",
+      "command": "run-rename-kit"
+    },
+    {
+      "separator": true
+    },
+    {
+      "name": "Settings",
+      "command": "open-settings"
+    }
+  ],
   "relaunchButtons": [
     {
       "command": "run-rename-kit",
