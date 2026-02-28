@@ -10,19 +10,27 @@
       }
 
       body {
-        margin: 0;
-        padding: 16px;
+        padding: 0;
         font: 12px/1.4 "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        overflow: auto;
+        overflow: hidden;
+        min-height: 100vh;
+        box-sizing: border-box;
       }
 
       form {
         display: grid;
         gap: 8px;
+        align-content: start;
+        position: fixed;
+        inset: 0;
+        overflow-y: auto;
+        overflow-x: hidden;
+        scrollbar-gutter: stable;
+        padding: 16px 16px 56px;
+        box-sizing: border-box;
       }
 
       .setting-accordion {
-        margin: 0;
         border: 0;
         border-bottom: 1px solid rgba(128, 128, 128, 0.4);
         padding: 0 0 10px;
@@ -35,7 +43,8 @@
 
       .setting-summary {
         cursor: pointer;
-        font-weight: 600;
+        font-size: 14px;
+        font-weight: 500;
         list-style: none;
         display: flex;
         align-items: center;
@@ -58,7 +67,7 @@
       }
 
       .setting-body {
-        margin-top: 8px;
+        padding-top: 8px;
         display: grid;
         gap: 10px;
       }
@@ -66,7 +75,7 @@
       label {
         display: grid;
         gap: 4px;
-        margin-bottom: 8px;
+        padding-bottom: 8px;
       }
 
       input,
@@ -80,6 +89,7 @@
         width: 100%;
         box-sizing: border-box;
         height: 32px;
+        font-size: 13px;
         border: 1px solid rgba(128, 128, 128, 0.55);
         border-radius: 6px;
         padding: 0 8px;
@@ -88,15 +98,19 @@
       }
 
       .hint {
-        margin: 4px 0 0;
+        padding-top: 4px;
         font-size: 11px;
         opacity: 0.8;
       }
 
       .error-text {
-        margin: 4px 0 0;
+        padding-top: 4px;
         font-size: 11px;
         color: #d93025;
+      }
+
+      .setting-body > .error-text {
+        order: 19;
       }
 
       .required-asterisk {
@@ -108,13 +122,30 @@
         display: flex;
         justify-content: flex-end;
         gap: 8px;
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        padding: 8px 16px;
+        background: #ffffff;
+        border-top: 1px solid rgba(128, 128, 128, 0.28);
+        z-index: 2;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        body,
+        form,
+        .actions {
+          background: #1e1e1e;
+          border-top-color: rgba(255, 255, 255, 0.18);
+        }
       }
 
       .rule-editor-head {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin: 8px 0 6px;
+        padding: 8px 0 6px;
       }
 
       .rules-list {
@@ -129,13 +160,13 @@
         align-items: end;
       }
 
-      .rule-row label {
-        margin-bottom: 0;
-      }
-
       .rule-layer-name {
         width: auto;
-        min-width: 8ch;
+        min-width: 7ch;
+      }
+
+      .rule-row label {
+        padding-bottom: 0;
       }
 
       .rule-row button {
@@ -146,7 +177,7 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin: 8px 0 6px;
+        padding: 8px 0 6px;
       }
 
       .allowed-colors-list {
@@ -162,7 +193,7 @@
       }
 
       .allowed-color-row label {
-        margin-bottom: 0;
+        padding-bottom: 0;
       }
 
       .icon-delete {
@@ -251,19 +282,18 @@
       }
 
       .modal-title {
-        margin: 0;
         font-size: 13px;
         font-weight: 600;
       }
 
       .modal-text {
-        margin: 8px 0 0;
+        padding-top: 8px;
         font-size: 12px;
         opacity: 0.9;
       }
 
       .modal-actions {
-        margin-top: 12px;
+        padding-top: 12px;
         display: flex;
         justify-content: flex-end;
         gap: 8px;
@@ -291,10 +321,37 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
+        font-size: 13px;
         font-weight: 500;
         background: transparent;
         color: inherit;
         cursor: pointer;
+      }
+
+      .toast {
+        position: fixed;
+        left: 50%;
+        bottom: 16px;
+        width: max-content;
+        max-width: calc(100% - 32px);
+        padding: 10px 12px;
+        border: 1px solid rgba(128, 128, 128, 0.45);
+        border-radius: 8px;
+        background: rgba(31, 31, 31, 0.96);
+        color: #ffffff;
+        font-size: 12px;
+        line-height: 1.4;
+        text-align: center;
+        opacity: 0;
+        transform: translate(-50%, 8px);
+        transition: opacity 140ms ease, transform 140ms ease;
+        pointer-events: none;
+        z-index: 1000;
+      }
+
+      .toast.is-visible {
+        opacity: 1;
+        transform: translate(-50%, 0);
       }
     </style>
   </head>
@@ -303,27 +360,38 @@
       <details class="setting-accordion" open>
         <summary class="setting-summary">Rename and detection rules</summary>
         <div class="setting-body">
+          <div class="hint">
+            Layer name and path are mandatory. Add full token path. Last path segment is used as style prefix match.
+          </div>
           <div class="rule-editor-head">
             <button type="button" id="add-rule">Add New</button>
           </div>
           <div id="rename-rules" class="rules-list"></div>
-          <p class="hint">
-            Layer name and path are mandatory. Add full token path. Last path segment is used as style prefix match.
-          </p>
-          <p id="rename-rules-error" class="error-text" hidden>
-            Duplicate path found. Each rename rule path must be unique.
-          </p>
+          <div id="rename-rules-error" class="error-text" hidden>
+            Duplicate path. Each path must be unique.
+          </div>
         </div>
       </details>
 
       <details class="setting-accordion">
         <summary class="setting-summary">Never flag these color paths</summary>
         <div class="setting-body">
+          <div class="hint">Path is mandatory. Add paths that should never be flagged as mismatched.</div>
           <div class="allowed-colors-head">
             <button type="button" id="add-allowed-color">Add New</button>
           </div>
           <div id="always-allowed-list" class="allowed-colors-list"></div>
-          <p class="hint">Path is mandatory. Add paths that should never be flagged as mismatched.</p>
+        </div>
+      </details>
+
+      <details class="setting-accordion">
+        <summary class="setting-summary">Frame rename</summary>
+        <div class="setting-body">
+          <div class="hint">Default Frame / Frame N layers will be renamed to this name.</div>
+          <label>
+            <span>Frame layer name <span class="required-asterisk">*</span></span>
+            <input type="text" id="frame-rename-target" placeholder="item" required />
+          </label>
         </div>
       </details>
 
@@ -341,8 +409,10 @@
         aria-labelledby="delete-modal-title"
         aria-describedby="delete-modal-text"
       >
-        <h2 id="delete-modal-title" class="modal-title">Delete item?</h2>
-        <p id="delete-modal-text" class="modal-text">This action cannot be undone.</p>
+        <div id="delete-modal-title" class="modal-title" role="heading" aria-level="2">
+          Delete item?
+        </div>
+        <div id="delete-modal-text" class="modal-text">This action cannot be undone.</div>
         <div class="modal-actions">
           <button type="button" id="delete-modal-cancel">Cancel</button>
           <button type="button" id="delete-modal-confirm" class="danger-button">Delete</button>
@@ -350,10 +420,13 @@
       </div>
     </div>
 
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
     <script>
       // Compatibility shim for older cached handlers that still reference this name.
       var alwaysAllowedInput = { value: "" };
       function renderCorePaths() {}
+      const DEFAULT_FRAME_LAYER_NAME = "item";
 
       const form = document.getElementById("settings-form");
       const cancelButton = document.getElementById("cancel");
@@ -362,15 +435,19 @@
       const renameRulesError = document.getElementById("rename-rules-error");
       const addAllowedColorButton = document.getElementById("add-allowed-color");
       const alwaysAllowedColorsContainer = document.getElementById("always-allowed-list");
+      const frameRenameInput = document.getElementById("frame-rename-target");
       const settingAccordions = document.querySelectorAll(".setting-accordion");
-      const MIN_LAYER_NAME_SIZE = 8;
-      const MAX_LAYER_NAME_SIZE = "highlighted-text".length;
+      const MIN_LAYER_NAME_SIZE = 7;
+      const MAX_LAYER_NAME_SIZE = "heading-text".length + 1;
       const deleteConfirmModal = document.getElementById("delete-confirm-modal");
       const deleteModalText = document.getElementById("delete-modal-text");
       const deleteModalCancelButton = document.getElementById("delete-modal-cancel");
       const deleteModalConfirmButton = document.getElementById("delete-modal-confirm");
+      const toastElement = document.getElementById("toast");
       let deleteConfirmResolver = null;
       let deleteConfirmReturnFocus = null;
+      let initialSettingsSignature = "";
+      let toastHideTimer = null;
 
       function createTrashIcon() {
         const ns = "http://www.w3.org/2000/svg";
@@ -409,6 +486,66 @@
 
       function hasInputValue(input) {
         return input instanceof HTMLInputElement && input.value.trim().length > 0;
+      }
+
+      function isInputTextOverflowing(input) {
+        if (!(input instanceof HTMLInputElement)) return false;
+        const value = input.value || "";
+        if (!value) return false;
+        const previousScrollLeft = input.scrollLeft;
+        input.scrollLeft = 0;
+        const overflowing = input.scrollWidth > input.clientWidth + 1;
+        input.scrollLeft = previousScrollLeft;
+        return overflowing;
+      }
+
+      function updateInputOverflowTooltip(input) {
+        if (!(input instanceof HTMLInputElement)) return;
+        if (isInputTextOverflowing(input)) {
+          input.title = input.value;
+        } else {
+          input.removeAttribute("title");
+        }
+      }
+
+      function setupInputOverflowTooltip(input) {
+        if (!(input instanceof HTMLInputElement)) return;
+        if (input.dataset.overflowTooltipBound === "1") {
+          updateInputOverflowTooltip(input);
+          return;
+        }
+        input.dataset.overflowTooltipBound = "1";
+        const refresh = () => updateInputOverflowTooltip(input);
+        input.addEventListener("input", refresh);
+        input.addEventListener("mouseenter", refresh);
+        input.addEventListener("focus", refresh);
+        requestAnimationFrame(refresh);
+      }
+
+      function refreshAllInputOverflowTooltips() {
+        if (!form) return;
+        const inputs = form.querySelectorAll('input[type="text"]');
+        for (let i = 0; i < inputs.length; i++) {
+          const input = inputs[i];
+          if (!(input instanceof HTMLInputElement)) continue;
+          updateInputOverflowTooltip(input);
+        }
+      }
+
+      function showToast(message) {
+        if (!toastElement) return;
+        toastElement.textContent = String(message || "");
+        toastElement.hidden = false;
+        toastElement.classList.add("is-visible");
+        if (toastHideTimer) {
+          clearTimeout(toastHideTimer);
+        }
+        toastHideTimer = setTimeout(() => {
+          toastElement.classList.remove("is-visible");
+          toastHideTimer = setTimeout(() => {
+            toastElement.hidden = true;
+          }, 140);
+        }, 2400);
       }
 
       function closeDeleteConfirm(confirmed) {
@@ -504,6 +641,7 @@
           if (!(input instanceof HTMLInputElement)) continue;
           input.size = maxSize;
         }
+        refreshAllInputOverflowTooltips();
       }
 
       function createRuleRow(entry) {
@@ -524,6 +662,7 @@
         layerInput.required = true;
         layerInput.placeholder = "heading-text";
         layerInput.value = (entry && entry.newName) || "";
+        setupInputOverflowTooltip(layerInput);
         layerInput.addEventListener("input", () => {
           syncAllLayerNameInputSizes();
         });
@@ -543,6 +682,7 @@
         pathInput.required = true;
         pathInput.placeholder = "colors/content/text/regular/heading";
         pathInput.value = (entry && entry.path) || "";
+        setupInputOverflowTooltip(pathInput);
         pathLabel.appendChild(pathInput);
 
         const removeButton = document.createElement("button");
@@ -655,6 +795,7 @@
         colorInput.required = true;
         colorInput.placeholder = "colors/content/text/state/info";
         colorInput.value = normalized.color;
+        setupInputOverflowTooltip(colorInput);
         colorLabel.appendChild(colorInput);
 
         const removeButton = document.createElement("button");
@@ -714,6 +855,82 @@
         return { result, hasIncompleteRow };
       }
 
+      function normalizeTokenPathForComparison(value) {
+        let token = typeof value === "string" ? value.trim() : "";
+        while (token.length > 0 && token.charAt(token.length - 1) === "/") {
+          token = token.slice(0, token.length - 1);
+        }
+        return token;
+      }
+
+      function normalizeRenameRulesForComparison(values) {
+        const list = Array.isArray(values) ? values : [];
+        const result = [];
+        const seen = new Set();
+
+        for (let i = 0; i < list.length; i++) {
+          const row = list[i] && typeof list[i] === "object" ? list[i] : {};
+          const newName =
+            typeof row.newName === "string"
+              ? row.newName.trim()
+              : typeof row.layerName === "string"
+                ? row.layerName.trim()
+                : "";
+          const rawPath =
+            typeof row.path === "string"
+              ? row.path
+              : typeof row.color === "string"
+                ? row.color
+                : typeof row.value === "string"
+                  ? row.value
+                  : "";
+          const path = normalizeTokenPathForComparison(rawPath);
+          if (!newName || !path) continue;
+
+          const key = path.toLowerCase();
+          if (seen.has(key)) continue;
+          seen.add(key);
+          result.push({ newName, path });
+        }
+
+        return result;
+      }
+
+      function normalizeAlwaysAllowedColorsForComparison(values) {
+        const list = Array.isArray(values) ? values : [];
+        const result = [];
+        const seen = new Set();
+
+        for (let i = 0; i < list.length; i++) {
+          const row = normalizeAlwaysAllowedColorEntry(list[i]);
+          const color = row && typeof row.color === "string" ? row.color.trim() : "";
+          if (!color) continue;
+
+          const key = color.toLowerCase();
+          if (seen.has(key)) continue;
+          seen.add(key);
+          result.push(color);
+        }
+
+        return result;
+      }
+
+      function normalizeFrameLayerNameForComparison(value) {
+        const next = typeof value === "string" ? value.trim() : "";
+        return next || DEFAULT_FRAME_LAYER_NAME;
+      }
+
+      function buildSettingsSignature(payload) {
+        const source = payload && typeof payload === "object" ? payload : {};
+        return JSON.stringify({
+          frameLayerName: normalizeFrameLayerNameForComparison(source.frameLayerName),
+          renameRules: normalizeRenameRulesForComparison(source.renameRules),
+          alwaysAllowedColors: normalizeAlwaysAllowedColorsForComparison(
+            source.alwaysAllowedColors
+          ),
+        });
+      }
+
       function requestInitialSettings() {
         parent.postMessage(
           {
@@ -747,8 +964,19 @@
         if (!message || message.type !== "init-settings") return;
 
         const payload = message.payload || {};
-        renderRenameRules(payload.renameRules || []);
-        renderAlwaysAllowedColors(payload.alwaysAllowedColors || []);
+        const initialPayload = {
+          frameLayerName: normalizeFrameLayerNameForComparison(payload.frameLayerName),
+          renameRules: payload.renameRules || [],
+          alwaysAllowedColors: payload.alwaysAllowedColors || [],
+        };
+        renderRenameRules(initialPayload.renameRules);
+        renderAlwaysAllowedColors(initialPayload.alwaysAllowedColors);
+        if (frameRenameInput) {
+          frameRenameInput.value = initialPayload.frameLayerName;
+          setupInputOverflowTooltip(frameRenameInput);
+        }
+        initialSettingsSignature = buildSettingsSignature(initialPayload);
+        requestAnimationFrame(refreshAllInputOverflowTooltips);
       };
 
       requestInitialSettings();
@@ -776,6 +1004,11 @@
         const row = createAlwaysAllowedColorRow({ name: "", color: "" });
         alwaysAllowedColorsContainer.appendChild(row);
         focusNewInput(row, ".allowed-color-value");
+        refreshAllInputOverflowTooltips();
+      });
+
+      window.addEventListener("resize", () => {
+        refreshAllInputOverflowTooltips();
       });
 
       if (deleteModalCancelButton) {
@@ -814,19 +1047,34 @@
         const renameRules = collectRenameRules();
         const alwaysAllowedColors = collectAlwaysAllowedColors();
         if (validateDuplicateRulePaths()) {
-          window.alert("Duplicate path found in rename rules. Please fix it first.");
+          showToast("Duplicate path in rename rules.");
           return;
         }
         if (renameRules.hasIncompleteRow) {
-          window.alert("Each rename rule row must include both layer name and path.");
+          showToast("Fill in layer name and path for each rule.");
           return;
         }
         if (renameRules.result.length === 0) {
-          window.alert("Add at least one rename rule.");
+          showToast("Add at least one rename rule.");
           return;
         }
         if (alwaysAllowedColors.hasIncompleteRow) {
-          window.alert("Each never-flag row must include a path.");
+          showToast("Fill in a path for each never-flag item.");
+          return;
+        }
+        const frameLayerName = frameRenameInput ? frameRenameInput.value.trim() : "";
+        if (!frameLayerName) {
+          showToast("Enter frame layer name.");
+          return;
+        }
+
+        const nextPayload = {
+          frameLayerName,
+          renameRules: renameRules.result,
+          alwaysAllowedColors: alwaysAllowedColors.result,
+        };
+        if (buildSettingsSignature(nextPayload) === initialSettingsSignature) {
+          showToast("No changes made.");
           return;
         }
 
@@ -834,10 +1082,7 @@
           {
             pluginMessage: {
               type: "save-settings",
-              payload: {
-                renameRules: renameRules.result,
-                alwaysAllowedColors: alwaysAllowedColors.result,
-              },
+              payload: nextPayload,
             },
           },
           "*"

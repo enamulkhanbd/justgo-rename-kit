@@ -7,6 +7,7 @@ const DEFAULT_FRAME_NAME_RE = /^Frame( \d+)?$/;
 const RELAUNCH_COMMAND = "run-rename-kit";
 const SETTINGS_COMMAND = "open-settings";
 const SETTINGS_STORAGE_KEY = "rename-kit-settings-v1";
+const DEFAULT_FRAME_LAYER_NAME = "item";
 const VALID_RULE_PATH_TYPES = ["regular", "inverse", "brand"];
 
 const DEFAULT_RENAME_RULES = [
@@ -29,6 +30,7 @@ const DEFAULT_RENAME_RULES = [
 ];
 
 const DEFAULT_SETTINGS = Object.freeze({
+  frameLayerName: DEFAULT_FRAME_LAYER_NAME,
   colorPaths: {
     regular: "colors/content/text/regular/",
     inverse: "colors/content/text/inverse/",
@@ -48,6 +50,11 @@ function sanitizePath(value, fallback) {
   const next = typeof value === "string" ? value.trim() : "";
   const resolved = next || fallback;
   return resolved.endsWith("/") ? resolved : resolved + "/";
+}
+
+function sanitizeLayerName(value, fallback) {
+  const next = typeof value === "string" ? value.trim() : "";
+  return next || fallback;
 }
 
 function normalizeTokenPath(value) {
@@ -180,6 +187,7 @@ function normalizeSettings(raw) {
     : DEFAULT_SETTINGS.renameRules;
 
   return {
+    frameLayerName: sanitizeLayerName(source.frameLayerName, DEFAULT_SETTINGS.frameLayerName),
     colorPaths: {
       regular: sanitizePath(sourcePaths.regular, DEFAULT_SETTINGS.colorPaths.regular),
       inverse: sanitizePath(sourcePaths.inverse, DEFAULT_SETTINGS.colorPaths.inverse),
@@ -207,6 +215,10 @@ async function saveSettings(nextSettings) {
   const normalized = normalizeSettings(nextSettings);
   await figma.clientStorage.setAsync(SETTINGS_STORAGE_KEY, normalized);
   return normalized;
+}
+
+function areSettingsEqual(left, right) {
+  return JSON.stringify(normalizeSettings(left)) === JSON.stringify(normalizeSettings(right));
 }
 
 function getCategoryFromPath(path) {
@@ -253,25 +265,30 @@ function isVisible(node) {
   return typeof node.visible === "boolean" ? node.visible : true;
 }
 
-// Rename "Frame"/"Frame N" to "item" under a root; return count
-function renameDefaultFramesIn(root) {
+// Rename "Frame"/"Frame N" to configured value under a root; return count
+function renameDefaultFramesIn(root, targetName) {
   let count = 0;
+  const nextName = sanitizeLayerName(targetName, DEFAULT_FRAME_LAYER_NAME);
 
   if (root.type === "FRAME" && DEFAULT_FRAME_NAME_RE.test(root.name)) {
-    try {
-      root.name = "item";
-      count++;
-    } catch (e) {}
+    if (root.name !== nextName) {
+      try {
+        root.name = nextName;
+        count++;
+      } catch (e) {}
+    }
   }
   if ("findAll" in root) {
     const frames = root.findAll(
       (n) => n.type === "FRAME" && isVisible(n) && DEFAULT_FRAME_NAME_RE.test(n.name)
     );
     for (let i = 0; i < frames.length; i++) {
-      try {
-        frames[i].name = "item";
-        count++;
-      } catch (e) {}
+      if (frames[i].name !== nextName) {
+        try {
+          frames[i].name = nextName;
+          count++;
+        } catch (e) {}
+      }
     }
   }
   return count;
@@ -422,8 +439,13 @@ async function openSettingsUI() {
 
     if (msg.type === "save-settings") {
       try {
+        const currentSettings = await getSettings();
+        if (areSettingsEqual(currentSettings, msg.payload)) {
+          figma.notify("No changes made.");
+          return;
+        }
         await saveSettings(msg.payload);
-        figma.notify("Rename Kit settings saved.");
+        figma.notify("Settings saved.");
       } catch (e) {
         figma.notify("Could not save settings.");
       }
@@ -473,10 +495,10 @@ async function runRenameKit() {
 
   setRelaunchForNodes(selection);
 
-  // 1) Rename default frames to "item"
+  // 1) Rename default frames to configured frameLayerName
   let framesRenamed = 0;
   for (let i = 0; i < selection.length; i++) {
-    framesRenamed += renameDefaultFramesIn(selection[i]);
+    framesRenamed += renameDefaultFramesIn(selection[i], settings.frameLayerName);
   }
 
   // 2) Collect text nodes
