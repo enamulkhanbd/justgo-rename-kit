@@ -1,89 +1,124 @@
-# 🚀 Rename Kit for Figma
+# Rename Kit for Figma
 
-Rename Kit is a Figma plugin designed to clean up your design files, enforce consistency, and streamline your workflow. It automates tedious organization tasks, allowing you to focus more on designing and less on manual layer management.
+Rename Kit is a Figma plugin that helps teams keep files clean and consistent by automating layer naming and surfacing text color mismatches.
 
----
+## Latest Updates
 
-## ✨ Features
+- Added relaunch button support so you can rerun the plugin directly from the right-side properties panel.
+- Added a dedicated `Settings` command with an in-plugin UI for rule management.
+- Added configurable rename and color-validation rules (no code edits required for common changes).
+- Improved release automation with GitHub Actions workflows for tagging, packaging, and publishing.
+- Latest published entry in [RELEASES.md](RELEASES.md): `v1.2.0`.
 
-Rename Kit offers three core features to keep your design files tidy and consistent:
+## Features
 
-1. **Text Layer Renaming**
-   - Automatically renames your text layers to match a predefined naming convention based on their applied Text Style.
-   - _Example_: A text layer using the `heading/h1` style will be renamed to `heading-text`.
+1. Text Layer Renaming
+- Renames text layers based on mapped text style color paths.
+- Example: `colors/content/text/regular/heading` can map to `heading-text`.
 
-2. **Default Frame Renaming**
-   - Scans your selection and renames any frames with default names (e.g., `Frame 1`, `Frame 27`) to a consistent name, `item`.
-   - This helps create a clean and predictable structure for lists and components.
+2. Default Frame Renaming
+- Renames default frame names like `Frame`, `Frame 1`, `Frame 27` to `item`.
 
-3. **Mismatched Color Detection**
-   - Intelligently identifies and selects any text layers that are using a Color Style or Variable that doesn't align with the rules defined for its Text Style.
-   - Makes it incredibly easy to spot and fix design inconsistencies.
+3. Mismatched Color Detection
+- Detects text layers where color style/variable does not match expected paths for that style category.
+- Selects mismatched layers automatically so they can be fixed quickly.
 
-4. **Relaunch Button Support**
-   - After a run, tagged nodes expose a relaunch button so you can rerun Rename Kit directly from the properties panel.
+4. Relaunch Button Support
+- Adds `Run Rename Kit` relaunch data to selected nodes/page for faster reruns.
 
----
+5. Settings UI
+- Manage rename rules and never-flag color paths from `Plugins > JustGo Rename Kit > Settings`.
 
-## 🛠️ How to Use
+## How To Use
 
-1. **Select Layers**
-   - In your Figma file, select one or more frames, groups, or layers you want to clean up.
-2. **Run the Plugin**
-   - Go to `Plugins > Rename Kit`.
-   - After the first run, select a tagged layer and use the relaunch button `Run Rename Kit` in the right-side properties panel.
-   - Or use Figma's Quick Actions (`⌘ + /` or `Ctrl + /`) and type "Rename Kit".
-3. **Review the Results**
-   - A notification will appear summarizing the changes (e.g., number of frames and text layers renamed).
-   - If any text layers with mismatched colors are found, they will be automatically selected on the canvas, allowing you to fix them immediately.
+1. Select one or more frames/groups/layers in Figma.
+2. Run `Plugins > JustGo Rename Kit > Run Rename Kit`.
+3. Review the notification summary (renamed text layers, renamed frames, mismatches selected).
+4. Optional: use `Plugins > JustGo Rename Kit > Settings` to edit rules.
+5. Optional: use Quick Actions (`Ctrl + /` on Windows or `Cmd + /` on macOS) and type `Rename Kit`.
 
----
+## Configuration
 
-## ⚙️ Configuration (For Advanced Users)
-
-Rename Kit is built to be customizable. You can easily modify the naming conventions and color rules by editing the plugin's source code. This is perfect for teams that want to enforce their specific design system standards.
-
-### Text Style Naming Convention
-The mapping between Text Style categories and the new layer names is defined in the `categories` object within the `code.ts` file:
+The plugin stores settings in `figma.clientStorage` and uses these main structures:
 
 ```js
-const categories = {
-  "heading": "heading-text",
-  "title": "title-text",
-  "subtitle": "subtitle-text",
-  "body": "body-text",
-  // ...add or edit your own categories here
-};
+{
+  renameRules: [
+    { newName: "heading-text", path: "colors/content/text/regular/heading" },
+    { newName: "title-text", path: "colors/content/text/inverse/title" }
+  ],
+  alwaysAllowedColors: [
+    "colors/content/text/state/info",
+    "colors/content/text/state/success"
+  ]
+}
 ```
 
-The plugin reads the first part of a style's name (e.g., `heading` from `heading/h1`) and uses it as the key to find the new name.
+Rules notes:
+- `renameRules[].path` must be unique.
+- The last segment of the path is used as the style category fallback.
+- `alwaysAllowedColors` are paths that should never be flagged as mismatched.
 
-### Color Validation Rules
-The plugin validates text layer colors based on the `styleCategories` mapping. The `colorPaths` and `stateColors` objects define which color styles are considered valid for each text style.
+## Release Workflows
 
-- **colorPaths**: Defines the base paths for your color styles in the Figma library.
-- **stateColors**: A set of globally valid color styles (like error or success states) that are always considered correct, regardless of the text style applied.
+This repository has two GitHub Actions workflows for releases.
 
-You can modify these to match your team's design system structure:
+### 1) `.github/workflows/releases-auto-version.yml` (automatic)
 
-```js
-const colorPaths = {
-  regular: "colors/content/text/regular/",
-  inverse: "colors/content/text/inverse/",
-  brand: "colors/content/text/brand/"
-};
+Purpose: auto version bump + optional `RELEASES.md` update + tag + GitHub Release.
 
-const stateColors = new Set([
-  "colors/state/info",
-  "colors/state/success",
-  "colors/state/warning",
-  "colors/state/error",
-  "colors/content/text/regular/disabled"
-]);
+Trigger:
+- Runs on `push` to `main`.
+- Ignores pushes that only change `RELEASES.md`.
+
+Version bump rules (from commit subject lines since last `v*` tag):
+- `Breaking:` -> `major`
+- `Release:` or `Releases:` -> `minor`
+- `Fix:` -> `patch`
+- No matching subject -> no bump, no tag, no release
+
+Flow:
+1. Finds the latest `vX.Y.Z` tag (or uses `v0.0.0` if none).
+2. Computes next version based on rules above.
+3. Collects `Release:` / `Releases:` lines and inserts them under `## vX.Y.Z` in `RELEASES.md`.
+4. Commits `RELEASES.md` only if changed.
+5. Creates and pushes annotated tag `vX.Y.Z`.
+6. Packages zip from `manifest.json`, `manifest.main`, `manifest.ui`, plus optional `assets/`.
+7. Builds release notes (prefers the matching `RELEASES.md` section; falls back to commit subjects).
+8. Creates GitHub Release and uploads `<repo-slug>-vX.Y.Z.zip`.
+
+Skip behavior:
+- If latest commit message contains `[no release]`, zip/GitHub Release steps are skipped.
+- Tag creation still runs when a bump is detected.
+
+### 2) `.github/workflows/releases-zip.yml` (manual)
+
+Purpose: manual packaging and release publishing.
+
+Trigger:
+- `workflow_dispatch` (run manually from GitHub Actions).
+
+Flow:
+1. Packages zip using `manifest.json` + `main` + `ui` (+ optional `assets/`).
+2. Uses current ref name as tag (`GITHUB_REF_NAME`).
+3. Builds release notes from matching section in `RELEASES.md` if present.
+4. Creates GitHub Release and uploads the zip.
+
+## Commit Message Conventions For Auto Versioning
+
+Use these subject prefixes at the start of commit messages:
+
+- `Breaking: ...` for major releases.
+- `Release: ...` or `Releases: ...` for minor releases and changelog bullets.
+- `Fix: ...` for patch releases.
+
+Example:
+
+```text
+Releases: Add settings UI for rename rules
+Fix: Handle duplicate rule paths in validation
 ```
 
----
+## License
 
-## 📄 License
-
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License. See [LICENSE](LICENSE).
