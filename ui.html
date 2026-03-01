@@ -1,1094 +1,1117 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Rename Kit Settings</title>
-    <style>
-      :root {
-        color-scheme: light dark;
-      }
 
-      body {
-        padding: 0;
-        font: 12px/1.4 "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        overflow: hidden;
-        min-height: 100vh;
-        box-sizing: border-box;
-      }
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Rename Kit Settings</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+    }
 
-      form {
-        display: grid;
-        gap: 8px;
-        align-content: start;
-        position: fixed;
-        inset: 0;
-        overflow-y: auto;
-        overflow-x: hidden;
-        scrollbar-gutter: stable;
-        padding: 16px 16px 56px;
-        box-sizing: border-box;
-      }
+    body {
+      padding: 0;
+      font: 12px/1.4 "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      overflow: hidden;
+      min-height: 100vh;
+      box-sizing: border-box;
+    }
 
-      .setting-accordion {
-        border: 0;
-        border-bottom: 1px solid rgba(128, 128, 128, 0.4);
-        padding: 0 0 10px;
-      }
+    form {
+      display: grid;
+      gap: 8px;
+      align-content: start;
+      position: fixed;
+      inset: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+      scrollbar-gutter: stable;
+      padding: 16px 16px 56px;
+      box-sizing: border-box;
+    }
 
-      .setting-accordion:last-of-type {
-        border-bottom: 0;
-        padding-bottom: 0;
-      }
+    .setting-accordion {
+      border: 0;
+      border-bottom: 1px solid rgba(128, 128, 128, 0.4);
+      padding: 0 0 10px;
+    }
 
-      .setting-summary {
-        cursor: pointer;
-        font-size: 14px;
-        font-weight: 500;
-        list-style: none;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
+    .setting-accordion:last-of-type {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
 
-      .setting-summary::-webkit-details-marker {
-        display: none;
-      }
+    .setting-summary {
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
 
-      .setting-summary::before {
-        content: "+";
-        width: 12px;
-        text-align: center;
-        opacity: 0.8;
-      }
+    .setting-summary::-webkit-details-marker {
+      display: none;
+    }
 
-      .setting-accordion[open] .setting-summary::before {
-        content: "-";
-      }
+    .setting-summary::before {
+      content: "+";
+      width: 12px;
+      text-align: center;
+      opacity: 0.8;
+    }
 
-      .setting-body {
-        padding-top: 8px;
-        display: grid;
-        gap: 10px;
-      }
+    .setting-accordion[open] .setting-summary::before {
+      content: "-";
+    }
 
-      label {
-        display: grid;
-        gap: 4px;
-        padding-bottom: 8px;
-      }
+    .setting-body {
+      padding-top: 8px;
+      display: grid;
+      gap: 10px;
+    }
 
-      input,
-      select,
-      button {
-        font: inherit;
-      }
+    label {
+      display: grid;
+      gap: 4px;
+      padding-bottom: 8px;
+    }
 
-      input,
-      select {
-        width: 100%;
-        box-sizing: border-box;
-        height: 32px;
-        font-size: 13px;
-        border: 1px solid rgba(128, 128, 128, 0.55);
-        border-radius: 6px;
-        padding: 0 8px;
-        background: transparent;
-        color: inherit;
-      }
+    input,
+    select,
+    button {
+      font: inherit;
+    }
 
-      .hint {
-        padding-top: 4px;
-        font-size: 11px;
-        opacity: 0.8;
-      }
+    input,
+    select {
+      width: 100%;
+      box-sizing: border-box;
+      height: 32px;
+      font-size: 13px;
+      border: 1px solid rgba(128, 128, 128, 0.55);
+      border-radius: 6px;
+      padding: 0 8px;
+      background: transparent;
+      color: inherit;
+    }
 
-      .error-text {
-        padding-top: 4px;
-        font-size: 11px;
-        color: #d93025;
-      }
+    .hint {
+      padding-top: 4px;
+      font-size: 11px;
+      opacity: 0.8;
+    }
 
-      .setting-body > .error-text {
-        order: 19;
-      }
+    .error-text {
+      padding-top: 4px;
+      font-size: 11px;
+      color: #d93025;
+    }
 
-      .required-asterisk {
-        color: #d93025;
-        font-weight: 600;
-      }
+    .setting-body>.error-text {
+      order: 19;
+    }
 
+    .required-asterisk {
+      color: #d93025;
+      font-weight: 600;
+    }
+
+    .actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      padding: 8px 16px;
+      background: #ffffff;
+      border-top: 1px solid rgba(128, 128, 128, 0.28);
+      z-index: 2;
+    }
+
+    @media (prefers-color-scheme: dark) {
+
+      body,
+      form,
       .actions {
-        display: flex;
-        justify-content: flex-end;
-        gap: 8px;
-        position: fixed;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        padding: 8px 16px;
-        background: #ffffff;
-        border-top: 1px solid rgba(128, 128, 128, 0.28);
-        z-index: 2;
+        background: #1e1e1e;
+        border-top-color: rgba(255, 255, 255, 0.18);
       }
+    }
 
-      @media (prefers-color-scheme: dark) {
-        body,
-        form,
-        .actions {
-          background: #1e1e1e;
-          border-top-color: rgba(255, 255, 255, 0.18);
-        }
-      }
+    .rule-editor-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0 6px;
+    }
 
-      .rule-editor-head {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 8px 0 6px;
-      }
+    .rules-list {
+      display: grid;
+      gap: 8px;
+    }
 
-      .rules-list {
-        display: grid;
-        gap: 8px;
-      }
+    .rule-row {
+      display: grid;
+      grid-template-columns: max-content 1fr auto;
+      gap: 8px;
+      align-items: end;
+    }
 
-      .rule-row {
-        display: grid;
-        grid-template-columns: max-content 1fr auto;
-        gap: 8px;
-        align-items: end;
-      }
+    .rule-layer-name {
+      width: auto;
+      min-width: 7ch;
+    }
 
-      .rule-layer-name {
-        width: auto;
-        min-width: 7ch;
-      }
+    .rule-row label {
+      padding-bottom: 0;
+    }
 
-      .rule-row label {
-        padding-bottom: 0;
-      }
+    .rule-row button {
+      white-space: nowrap;
+    }
 
-      .rule-row button {
-        white-space: nowrap;
-      }
+    .allowed-colors-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0 6px;
+    }
 
-      .allowed-colors-head {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 8px 0 6px;
-      }
+    .allowed-colors-list {
+      display: grid;
+      gap: 8px;
+    }
 
-      .allowed-colors-list {
-        display: grid;
-        gap: 8px;
-      }
+    .allowed-color-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: end;
+    }
 
-      .allowed-color-row {
-        display: grid;
-        grid-template-columns: 1fr auto;
-        gap: 8px;
-        align-items: end;
-      }
+    .allowed-color-row label {
+      padding-bottom: 0;
+    }
 
-      .allowed-color-row label {
-        padding-bottom: 0;
-      }
+    .icon-delete {
+      width: 32px;
+      min-width: 32px;
+      height: 32px;
+      min-height: 32px;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      font-weight: 700;
+      line-height: 1;
+      transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+    }
 
-      .icon-delete {
-        width: 32px;
-        min-width: 32px;
-        height: 32px;
-        min-height: 32px;
-        padding: 0;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-        font-weight: 700;
-        line-height: 1;
-        transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
-      }
+    .icon-delete svg {
+      width: 18px;
+      height: 18px;
+      display: block;
+      pointer-events: none;
+    }
 
-      .icon-delete svg {
-        width: 20px;
-        height: 20px;
-        display: block;
-        fill: currentColor;
-        pointer-events: none;
-      }
+    .icon-delete:hover,
+    .icon-delete:focus-visible {
+      background: rgba(217, 48, 37, 0.14);
+      border-color: #d93025;
+      color: #d93025;
+    }
 
-      .icon-delete:hover,
-      .icon-delete:focus-visible {
-        background: rgba(217, 48, 37, 0.14);
-        border-color: #d93025;
-        color: #d93025;
-      }
+    #add-rule,
+    #add-allowed-color,
+    #save-settings {
+      background: #0d99ff;
+      border-color: #0d99ff;
+      color: #ffffff;
+    }
 
-      #add-rule,
-      #add-allowed-color,
-      #save-settings {
-        background: #0d99ff;
-        border-color: #0d99ff;
-        color: #ffffff;
-      }
+    #add-rule:hover,
+    #add-rule:focus-visible,
+    #add-allowed-color:hover,
+    #add-allowed-color:focus-visible,
+    #save-settings:hover,
+    #save-settings:focus-visible {
+      background: #0b8de3;
+      border-color: #0b8de3;
+      color: #ffffff;
+    }
 
-      #add-rule:hover,
-      #add-rule:focus-visible,
-      #add-allowed-color:hover,
-      #add-allowed-color:focus-visible,
-      #save-settings:hover,
-      #save-settings:focus-visible {
-        background: #0b8de3;
-        border-color: #0b8de3;
-        color: #ffffff;
-      }
+    #add-rule:active,
+    #add-allowed-color:active,
+    #save-settings:active {
+      background: #0a7fd1;
+      border-color: #0a7fd1;
+      color: #ffffff;
+    }
 
-      #add-rule:active,
-      #add-allowed-color:active,
-      #save-settings:active {
-        background: #0a7fd1;
-        border-color: #0a7fd1;
-        color: #ffffff;
-      }
+    .input-error {
+      border-color: #d93025 !important;
+    }
 
-      .input-error {
-        border-color: #d93025 !important;
-      }
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.42);
+      display: grid;
+      place-items: center;
+      padding: 16px;
+      z-index: 999;
+    }
 
-      .modal-backdrop {
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.42);
-        display: grid;
-        place-items: center;
-        padding: 16px;
-        z-index: 999;
-      }
+    .modal-backdrop[hidden] {
+      display: none;
+    }
 
-      .modal-backdrop[hidden] {
-        display: none;
-      }
+    .modal {
+      width: min(320px, 100%);
+      border: 1px solid rgba(128, 128, 128, 0.45);
+      border-radius: 10px;
+      background: Canvas;
+      color: CanvasText;
+      padding: 14px;
+      box-sizing: border-box;
+    }
 
-      .modal {
-        width: min(320px, 100%);
-        border: 1px solid rgba(128, 128, 128, 0.45);
-        border-radius: 10px;
-        background: Canvas;
-        color: CanvasText;
-        padding: 14px;
-        box-sizing: border-box;
-      }
+    .modal-title {
+      font-size: 13px;
+      font-weight: 600;
+    }
 
-      .modal-title {
-        font-size: 13px;
-        font-weight: 600;
-      }
+    .modal-text {
+      padding-top: 8px;
+      font-size: 12px;
+      opacity: 0.9;
+    }
 
-      .modal-text {
-        padding-top: 8px;
-        font-size: 12px;
-        opacity: 0.9;
-      }
+    .modal-actions {
+      padding-top: 12px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
 
-      .modal-actions {
-        padding-top: 12px;
-        display: flex;
-        justify-content: flex-end;
-        gap: 8px;
-      }
+    .danger-button {
+      background: #d93025;
+      border-color: #d93025;
+      color: #ffffff;
+    }
 
-      .danger-button {
-        background: #d93025;
-        border-color: #d93025;
-        color: #ffffff;
-      }
+    .danger-button:hover,
+    .danger-button:focus-visible {
+      background: #c6281e;
+      border-color: #c6281e;
+      color: #ffffff;
+    }
 
-      .danger-button:hover,
-      .danger-button:focus-visible {
-        background: #c6281e;
-        border-color: #c6281e;
-        color: #ffffff;
-      }
+    button {
+      box-sizing: border-box;
+      height: 32px;
+      border: 1px solid rgba(128, 128, 128, 0.55);
+      border-radius: 6px;
+      padding: 0 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 500;
+      background: transparent;
+      color: inherit;
+      cursor: pointer;
+    }
 
-      button {
-        box-sizing: border-box;
-        height: 32px;
-        border: 1px solid rgba(128, 128, 128, 0.55);
-        border-radius: 6px;
-        padding: 0 12px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 13px;
-        font-weight: 500;
-        background: transparent;
-        color: inherit;
-        cursor: pointer;
-      }
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 16px;
+      width: max-content;
+      max-width: calc(100% - 32px);
+      padding: 10px 12px;
+      border: 1px solid rgba(128, 128, 128, 0.45);
+      border-radius: 8px;
+      background: rgba(31, 31, 31, 0.96);
+      color: #ffffff;
+      font-size: 12px;
+      line-height: 1.4;
+      text-align: center;
+      opacity: 0;
+      transform: translate(-50%, 8px);
+      transition: opacity 140ms ease, transform 140ms ease;
+      pointer-events: none;
+      z-index: 1000;
+    }
 
-      .toast {
-        position: fixed;
-        left: 50%;
-        bottom: 16px;
-        width: max-content;
-        max-width: calc(100% - 32px);
-        padding: 10px 12px;
-        border: 1px solid rgba(128, 128, 128, 0.45);
-        border-radius: 8px;
-        background: rgba(31, 31, 31, 0.96);
-        color: #ffffff;
-        font-size: 12px;
-        line-height: 1.4;
-        text-align: center;
-        opacity: 0;
-        transform: translate(-50%, 8px);
-        transition: opacity 140ms ease, transform 140ms ease;
-        pointer-events: none;
-        z-index: 1000;
-      }
+    .toast.is-visible {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+  </style>
+</head>
 
-      .toast.is-visible {
-        opacity: 1;
-        transform: translate(-50%, 0);
-      }
-    </style>
-  </head>
-  <body>
-    <form id="settings-form">
-      <details class="setting-accordion" open>
-        <summary class="setting-summary">Rename and detection rules</summary>
-        <div class="setting-body">
-          <div class="hint">
-            Layer name and path are mandatory. Add full token path. Last path segment is used as style prefix match.
-          </div>
-          <div class="rule-editor-head">
-            <button type="button" id="add-rule">Add New</button>
-          </div>
-          <div id="rename-rules" class="rules-list"></div>
-          <div id="rename-rules-error" class="error-text" hidden>
-            Duplicate path. Each path must be unique.
-          </div>
+<body>
+  <form id="settings-form">
+    <details class="setting-accordion" open>
+      <summary class="setting-summary">Rename and detection rules</summary>
+      <div class="setting-body">
+        <div class="hint">
+          Layer name and path are mandatory. Add full token path. Last path segment is used as style prefix match.
         </div>
-      </details>
-
-      <details class="setting-accordion">
-        <summary class="setting-summary">Never flag these color paths</summary>
-        <div class="setting-body">
-          <div class="hint">Path is mandatory. Add paths that should never be flagged as mismatched.</div>
-          <div class="allowed-colors-head">
-            <button type="button" id="add-allowed-color">Add New</button>
-          </div>
-          <div id="always-allowed-list" class="allowed-colors-list"></div>
+        <div class="rule-editor-head">
+          <button type="button" id="add-rule">Add New</button>
         </div>
-      </details>
-
-      <details class="setting-accordion">
-        <summary class="setting-summary">Frame rename</summary>
-        <div class="setting-body">
-          <div class="hint">Default Frame / Frame N layers will be renamed to this name.</div>
-          <label>
-            <span>Frame layer name <span class="required-asterisk">*</span></span>
-            <input type="text" id="frame-rename-target" placeholder="item" required />
-          </label>
+        <div id="rename-rules" class="rules-list"></div>
+        <div id="rename-rules-error" class="error-text" hidden>
+          Duplicate path. Each path must be unique.
         </div>
-      </details>
-
-      <div class="actions">
-        <button type="button" id="cancel">Cancel</button>
-        <button type="submit" id="save-settings">Update</button>
       </div>
-    </form>
+    </details>
 
-    <div id="delete-confirm-modal" class="modal-backdrop" hidden>
-      <div
-        class="modal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="delete-modal-title"
-        aria-describedby="delete-modal-text"
-      >
-        <div id="delete-modal-title" class="modal-title" role="heading" aria-level="2">
-          Delete item?
+    <details class="setting-accordion">
+      <summary class="setting-summary">Never flag these color paths</summary>
+      <div class="setting-body">
+        <div class="hint">Path is mandatory. Add paths that should never be flagged as mismatched.</div>
+        <div class="allowed-colors-head">
+          <button type="button" id="add-allowed-color">Add New</button>
         </div>
-        <div id="delete-modal-text" class="modal-text">This action cannot be undone.</div>
-        <div class="modal-actions">
-          <button type="button" id="delete-modal-cancel">Cancel</button>
-          <button type="button" id="delete-modal-confirm" class="danger-button">Delete</button>
-        </div>
+        <div id="always-allowed-list" class="allowed-colors-list"></div>
+      </div>
+    </details>
+
+    <details class="setting-accordion">
+      <summary class="setting-summary">Frame rename</summary>
+      <div class="setting-body">
+        <div class="hint">Default Frame / Frame N layers will be renamed to this name.</div>
+        <label>
+          <span>Frame layer name <span class="required-asterisk">*</span></span>
+          <input type="text" id="frame-rename-target" placeholder="item" required />
+        </label>
+      </div>
+    </details>
+
+    <div class="actions">
+      <button type="button" id="cancel">Cancel</button>
+      <button type="submit" id="save-settings">Update</button>
+    </div>
+  </form>
+
+  <div id="delete-confirm-modal" class="modal-backdrop" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title"
+      aria-describedby="delete-modal-text">
+      <div id="delete-modal-title" class="modal-title" role="heading" aria-level="2">
+        Delete item?
+      </div>
+      <div id="delete-modal-text" class="modal-text">This action cannot be undone.</div>
+      <div class="modal-actions">
+        <button type="button" id="delete-modal-cancel">Cancel</button>
+        <button type="button" id="delete-modal-confirm" class="danger-button">Delete</button>
       </div>
     </div>
+  </div>
 
-    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
-    <script>
-      // Compatibility shim for older cached handlers that still reference this name.
-      var alwaysAllowedInput = { value: "" };
-      function renderCorePaths() {}
-      const DEFAULT_FRAME_LAYER_NAME = "item";
+  <script>
+    // Compatibility shim for older cached handlers that still reference this name.
+    var alwaysAllowedInput = { value: "" };
+    function renderCorePaths() { }
+    const DEFAULT_FRAME_LAYER_NAME = "item";
 
-      const form = document.getElementById("settings-form");
-      const cancelButton = document.getElementById("cancel");
-      const addRuleButton = document.getElementById("add-rule");
-      const renameRulesContainer = document.getElementById("rename-rules");
-      const renameRulesError = document.getElementById("rename-rules-error");
-      const addAllowedColorButton = document.getElementById("add-allowed-color");
-      const alwaysAllowedColorsContainer = document.getElementById("always-allowed-list");
-      const frameRenameInput = document.getElementById("frame-rename-target");
-      const settingAccordions = document.querySelectorAll(".setting-accordion");
-      const MIN_LAYER_NAME_SIZE = 7;
-      const MAX_LAYER_NAME_SIZE = "heading-text".length + 1;
-      const deleteConfirmModal = document.getElementById("delete-confirm-modal");
-      const deleteModalText = document.getElementById("delete-modal-text");
-      const deleteModalCancelButton = document.getElementById("delete-modal-cancel");
-      const deleteModalConfirmButton = document.getElementById("delete-modal-confirm");
-      const toastElement = document.getElementById("toast");
-      let deleteConfirmResolver = null;
-      let deleteConfirmReturnFocus = null;
-      let initialSettingsSignature = "";
-      let toastHideTimer = null;
+    const form = document.getElementById("settings-form");
+    const cancelButton = document.getElementById("cancel");
+    const addRuleButton = document.getElementById("add-rule");
+    const renameRulesContainer = document.getElementById("rename-rules");
+    const renameRulesError = document.getElementById("rename-rules-error");
+    const addAllowedColorButton = document.getElementById("add-allowed-color");
+    const alwaysAllowedColorsContainer = document.getElementById("always-allowed-list");
+    const frameRenameInput = document.getElementById("frame-rename-target");
+    const settingAccordions = document.querySelectorAll(".setting-accordion");
+    const MIN_LAYER_NAME_SIZE = 7;
+    const MAX_LAYER_NAME_SIZE = "heading-text".length + 1;
+    const deleteConfirmModal = document.getElementById("delete-confirm-modal");
+    const deleteModalText = document.getElementById("delete-modal-text");
+    const deleteModalCancelButton = document.getElementById("delete-modal-cancel");
+    const deleteModalConfirmButton = document.getElementById("delete-modal-confirm");
+    const toastElement = document.getElementById("toast");
+    let deleteConfirmResolver = null;
+    let deleteConfirmReturnFocus = null;
+    let initialSettingsSignature = "";
+    let toastHideTimer = null;
 
-      function createTrashIcon() {
-        const ns = "http://www.w3.org/2000/svg";
-        const svg = document.createElementNS(ns, "svg");
-        svg.setAttribute("viewBox", "0 0 24 24");
-        svg.setAttribute("aria-hidden", "true");
-        const path = document.createElementNS(ns, "path");
-        path.setAttribute(
-          "d",
-          "M9 3a1 1 0 0 0-1 1v1H5a1 1 0 1 0 0 2h1l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12h1a1 1 0 1 0 0-2h-3V4a1 1 0 0 0-1-1H9zm1 2h4v1h-4V5zm-1 3h6l-.92 11H9.92L9 8z"
-        );
-        svg.appendChild(path);
-        return svg;
-      }
-
-      for (let i = 0; i < settingAccordions.length; i++) {
-        const accordion = settingAccordions[i];
-        accordion.addEventListener("toggle", () => {
-          if (!accordion.open) return;
-          for (let j = 0; j < settingAccordions.length; j++) {
-            const other = settingAccordions[j];
-            if (other !== accordion) {
-              other.open = false;
-            }
+    for (let i = 0; i < settingAccordions.length; i++) {
+      const accordion = settingAccordions[i];
+      accordion.addEventListener("toggle", () => {
+        if (!accordion.open) return;
+        for (let j = 0; j < settingAccordions.length; j++) {
+          const other = settingAccordions[j];
+          if (other !== accordion) {
+            other.open = false;
           }
-        });
-      }
-
-      function normalizePathForDuplicateCheck(value) {
-        let next = String(value || "").trim().toLowerCase();
-        while (next.length > 0 && next.charAt(next.length - 1) === "/") {
-          next = next.slice(0, next.length - 1);
         }
-        return next;
-      }
+      });
+    }
 
-      function hasInputValue(input) {
-        return input instanceof HTMLInputElement && input.value.trim().length > 0;
-      }
+    function createTrashIcon() {
+      const ns = "http://www.w3.org/2000/svg";
+      const svg = document.createElementNS(ns, "svg");
+      svg.setAttribute("viewBox", "0 0 24 24");
+      svg.setAttribute("fill", "none");
+      svg.setAttribute("stroke", "currentColor");
+      svg.setAttribute("stroke-width", "2");
+      svg.setAttribute("stroke-linecap", "round");
+      svg.setAttribute("stroke-linejoin", "round");
+      svg.setAttribute("aria-hidden", "true");
 
-      function isInputTextOverflowing(input) {
-        if (!(input instanceof HTMLInputElement)) return false;
-        const value = input.value || "";
-        if (!value) return false;
-        const previousScrollLeft = input.scrollLeft;
-        input.scrollLeft = 0;
-        const overflowing = input.scrollWidth > input.clientWidth + 1;
-        input.scrollLeft = previousScrollLeft;
-        return overflowing;
-      }
+      const path1 = document.createElementNS(ns, "path");
+      path1.setAttribute("d", "M3 6h18");
+      svg.appendChild(path1);
 
-      function updateInputOverflowTooltip(input) {
-        if (!(input instanceof HTMLInputElement)) return;
-        if (isInputTextOverflowing(input)) {
-          input.title = input.value;
-        } else {
-          input.removeAttribute("title");
-        }
-      }
+      const path2 = document.createElementNS(ns, "path");
+      path2.setAttribute("d", "M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6");
+      svg.appendChild(path2);
 
-      function setupInputOverflowTooltip(input) {
-        if (!(input instanceof HTMLInputElement)) return;
-        if (input.dataset.overflowTooltipBound === "1") {
-          updateInputOverflowTooltip(input);
-          return;
-        }
-        input.dataset.overflowTooltipBound = "1";
-        const refresh = () => updateInputOverflowTooltip(input);
-        input.addEventListener("input", refresh);
-        input.addEventListener("mouseenter", refresh);
-        input.addEventListener("focus", refresh);
-        requestAnimationFrame(refresh);
-      }
+      const path3 = document.createElementNS(ns, "path");
+      path3.setAttribute("d", "M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2");
+      svg.appendChild(path3);
 
-      function refreshAllInputOverflowTooltips() {
-        if (!form) return;
-        const inputs = form.querySelectorAll('input[type="text"]');
-        for (let i = 0; i < inputs.length; i++) {
-          const input = inputs[i];
-          if (!(input instanceof HTMLInputElement)) continue;
-          updateInputOverflowTooltip(input);
-        }
-      }
+      const line1 = document.createElementNS(ns, "line");
+      line1.setAttribute("x1", "10");
+      line1.setAttribute("x2", "10");
+      line1.setAttribute("y1", "11");
+      line1.setAttribute("y2", "17");
+      svg.appendChild(line1);
 
-      function showToast(message) {
-        if (!toastElement) return;
-        toastElement.textContent = String(message || "");
-        toastElement.hidden = false;
-        toastElement.classList.add("is-visible");
-        if (toastHideTimer) {
-          clearTimeout(toastHideTimer);
-        }
+      const line2 = document.createElementNS(ns, "line");
+      line2.setAttribute("x1", "14");
+      line2.setAttribute("x2", "14");
+      line2.setAttribute("y1", "11");
+      line2.setAttribute("y2", "17");
+      svg.appendChild(line2);
+
+      return svg;
+    }
+
+    function normalizePathForDuplicateCheck(value) {
+      let next = String(value || "").trim().toLowerCase();
+      while (next.length > 0 && next.charAt(next.length - 1) === "/") {
+        next = next.slice(0, next.length - 1);
+      }
+      return next;
+    }
+
+    function hasInputValue(input) {
+      return input instanceof HTMLInputElement && input.value.trim().length > 0;
+    }
+
+    function isInputTextOverflowing(input) {
+      if (!(input instanceof HTMLInputElement)) return false;
+      const value = input.value || "";
+      if (!value) return false;
+      const previousScrollLeft = input.scrollLeft;
+      input.scrollLeft = 0;
+      const overflowing = input.scrollWidth > input.clientWidth + 1;
+      input.scrollLeft = previousScrollLeft;
+      return overflowing;
+    }
+
+    function updateInputOverflowTooltip(input) {
+      if (!(input instanceof HTMLInputElement)) return;
+      if (isInputTextOverflowing(input)) {
+        input.title = input.value;
+      } else {
+        input.removeAttribute("title");
+      }
+    }
+
+    function setupInputOverflowTooltip(input) {
+      if (!(input instanceof HTMLInputElement)) return;
+      if (input.dataset.overflowTooltipBound === "1") {
+        updateInputOverflowTooltip(input);
+        return;
+      }
+      input.dataset.overflowTooltipBound = "1";
+      const refresh = () => updateInputOverflowTooltip(input);
+      input.addEventListener("input", refresh);
+      input.addEventListener("mouseenter", refresh);
+      input.addEventListener("focus", refresh);
+      requestAnimationFrame(refresh);
+    }
+
+    function refreshAllInputOverflowTooltips() {
+      if (!form) return;
+      const inputs = form.querySelectorAll('input[type="text"]');
+      for (let i = 0; i < inputs.length; i++) {
+        const input = inputs[i];
+        if (!(input instanceof HTMLInputElement)) continue;
+        updateInputOverflowTooltip(input);
+      }
+    }
+
+    function showToast(message) {
+      if (!toastElement) return;
+      toastElement.textContent = String(message || "");
+      toastElement.hidden = false;
+      toastElement.classList.add("is-visible");
+      if (toastHideTimer) {
+        clearTimeout(toastHideTimer);
+      }
+      toastHideTimer = setTimeout(() => {
+        toastElement.classList.remove("is-visible");
         toastHideTimer = setTimeout(() => {
-          toastElement.classList.remove("is-visible");
-          toastHideTimer = setTimeout(() => {
-            toastElement.hidden = true;
-          }, 140);
-        }, 2400);
-      }
+          toastElement.hidden = true;
+        }, 140);
+      }, 2400);
+    }
 
-      function closeDeleteConfirm(confirmed) {
-        if (deleteConfirmModal) {
-          deleteConfirmModal.hidden = true;
-        }
-        if (deleteConfirmResolver) {
-          const resolver = deleteConfirmResolver;
-          deleteConfirmResolver = null;
-          resolver(confirmed);
-        }
-        if (deleteConfirmReturnFocus) {
-          try {
-            deleteConfirmReturnFocus.focus();
-          } catch (_) {}
-          deleteConfirmReturnFocus = null;
-        }
-      }
-
-      function confirmDelete(message, triggerElement) {
-        return new Promise((resolve) => {
-          if (!deleteConfirmModal || !deleteModalText) {
-            resolve(window.confirm(message));
-            return;
-          }
-
-          if (deleteConfirmResolver) {
-            const previous = deleteConfirmResolver;
-            deleteConfirmResolver = null;
-            previous(false);
-          }
-
-          deleteConfirmResolver = resolve;
-          deleteConfirmReturnFocus = triggerElement || null;
-          deleteModalText.textContent = message || "This action cannot be undone.";
-          deleteConfirmModal.hidden = false;
-          requestAnimationFrame(() => {
-            try {
-              deleteModalConfirmButton.focus({ preventScroll: true });
-            } catch (_) {
-              deleteModalConfirmButton.focus();
-            }
-          });
-        });
-      }
-
-      function validateDuplicateRulePaths() {
-        const pathInputs = renameRulesContainer.querySelectorAll(".rule-path");
-        const seen = new Map();
-        const duplicateInputs = new Set();
-
-        for (let i = 0; i < pathInputs.length; i++) {
-          const input = pathInputs[i];
-          input.classList.remove("input-error");
-          input.setCustomValidity("");
-        }
-
-        for (let i = 0; i < pathInputs.length; i++) {
-          const input = pathInputs[i];
-          const key = normalizePathForDuplicateCheck(input.value);
-          if (!key) continue;
-          if (seen.has(key)) {
-            duplicateInputs.add(input);
-            duplicateInputs.add(seen.get(key));
-          } else {
-            seen.set(key, input);
-          }
-        }
-
-        duplicateInputs.forEach((input) => {
-          input.classList.add("input-error");
-          input.setCustomValidity("Duplicate path");
-        });
-
-        if (renameRulesError) {
-          renameRulesError.hidden = duplicateInputs.size === 0;
-        }
-        return duplicateInputs.size > 0;
-      }
-
-      function syncAllLayerNameInputSizes() {
-        const inputs = renameRulesContainer.querySelectorAll(".rule-layer-name");
-        let maxSize = MIN_LAYER_NAME_SIZE;
-        for (let i = 0; i < inputs.length; i++) {
-          const input = inputs[i];
-          if (!(input instanceof HTMLInputElement)) continue;
-          const sample = input.value || input.placeholder || "";
-          maxSize = Math.max(maxSize, sample.length + 1);
-        }
-        maxSize = Math.min(maxSize, MAX_LAYER_NAME_SIZE);
-        for (let i = 0; i < inputs.length; i++) {
-          const input = inputs[i];
-          if (!(input instanceof HTMLInputElement)) continue;
-          input.size = maxSize;
-        }
-        refreshAllInputOverflowTooltips();
-      }
-
-      function createRuleRow(entry) {
-        const row = document.createElement("div");
-        row.className = "rule-row";
-
-        const layerLabel = document.createElement("label");
-        const layerLabelText = document.createElement("span");
-        layerLabelText.textContent = "Layer name ";
-        const layerRequired = document.createElement("span");
-        layerRequired.className = "required-asterisk";
-        layerRequired.textContent = "*";
-        layerLabelText.appendChild(layerRequired);
-        layerLabel.appendChild(layerLabelText);
-        const layerInput = document.createElement("input");
-        layerInput.type = "text";
-        layerInput.className = "rule-layer-name";
-        layerInput.required = true;
-        layerInput.placeholder = "heading-text";
-        layerInput.value = (entry && entry.newName) || "";
-        setupInputOverflowTooltip(layerInput);
-        layerInput.addEventListener("input", () => {
-          syncAllLayerNameInputSizes();
-        });
-        layerLabel.appendChild(layerInput);
-
-        const pathLabel = document.createElement("label");
-        const pathLabelText = document.createElement("span");
-        pathLabelText.textContent = "Path ";
-        const pathRequired = document.createElement("span");
-        pathRequired.className = "required-asterisk";
-        pathRequired.textContent = "*";
-        pathLabelText.appendChild(pathRequired);
-        pathLabel.appendChild(pathLabelText);
-        const pathInput = document.createElement("input");
-        pathInput.type = "text";
-        pathInput.className = "rule-path";
-        pathInput.required = true;
-        pathInput.placeholder = "colors/content/text/regular/heading";
-        pathInput.value = (entry && entry.path) || "";
-        setupInputOverflowTooltip(pathInput);
-        pathLabel.appendChild(pathInput);
-
-        const removeButton = document.createElement("button");
-        removeButton.type = "button";
-        removeButton.className = "icon-delete";
-        removeButton.appendChild(createTrashIcon());
-        removeButton.title = "Delete";
-        removeButton.setAttribute("aria-label", "Delete rule");
-        removeButton.addEventListener("click", async (event) => {
-          event.preventDefault();
-          event.stopPropagation();
-          const hasLayerNameValue = hasInputValue(layerInput);
-          const hasPathValue = hasInputValue(pathInput);
-          if (!hasLayerNameValue && !hasPathValue) {
-            row.remove();
-            syncAllLayerNameInputSizes();
-            validateDuplicateRulePaths();
-            return;
-          }
-          const confirmed = await confirmDelete(
-            "Delete this rename and detection rule?",
-            removeButton
-          );
-          if (!confirmed) return;
-          row.remove();
-          syncAllLayerNameInputSizes();
-          validateDuplicateRulePaths();
-        });
-
-        row.appendChild(layerLabel);
-        row.appendChild(pathLabel);
-        row.appendChild(removeButton);
-        return row;
-      }
-
-      function renderRenameRules(entries) {
-        renameRulesContainer.innerHTML = "";
-        const list = Array.isArray(entries) ? entries : [];
-        for (let i = 0; i < list.length; i++) {
-          renameRulesContainer.appendChild(createRuleRow(list[i]));
-        }
-        syncAllLayerNameInputSizes();
-        validateDuplicateRulePaths();
-      }
-
-      function collectRenameRules() {
-        const rows = renameRulesContainer.querySelectorAll(".rule-row");
-        const result = [];
-        let hasIncompleteRow = false;
-        const seen = new Set();
-
-        for (let i = 0; i < rows.length; i++) {
-          const row = rows[i];
-          const nameEl = row.querySelector(".rule-layer-name");
-          const pathEl = row.querySelector(".rule-path");
-          const newName = nameEl ? nameEl.value.trim() : "";
-          const path = pathEl ? pathEl.value.trim() : "";
-
-          if (!path && !newName) continue;
-          if (!path || !newName) {
-            hasIncompleteRow = true;
-            continue;
-          }
-
-          const key = path.toLowerCase();
-          if (seen.has(key)) continue;
-          seen.add(key);
-          result.push({ newName, path });
-        }
-
-        return { result, hasIncompleteRow };
-      }
-
-      function normalizeAlwaysAllowedColorEntry(entry) {
-        if (typeof entry === "string") {
-          const value = entry.trim();
-          if (!value) return { name: "", color: "" };
-          return { name: value, color: value };
-        }
-
-        const next = entry && typeof entry === "object" ? entry : {};
-        const name = typeof next.name === "string" ? next.name.trim() : "";
-        const color =
-          typeof next.color === "string"
-            ? next.color.trim()
-            : typeof next.value === "string"
-              ? next.value.trim()
-              : typeof next.path === "string"
-                ? next.path.trim()
-                : "";
-        return { name, color };
-      }
-
-      function createAlwaysAllowedColorRow(entry) {
-        const normalized = normalizeAlwaysAllowedColorEntry(entry);
-        const row = document.createElement("div");
-        row.className = "allowed-color-row";
-
-        const colorLabel = document.createElement("label");
-        const colorLabelText = document.createElement("span");
-        colorLabelText.textContent = "Path ";
-        const colorRequired = document.createElement("span");
-        colorRequired.className = "required-asterisk";
-        colorRequired.textContent = "*";
-        colorLabelText.appendChild(colorRequired);
-        colorLabel.appendChild(colorLabelText);
-        const colorInput = document.createElement("input");
-        colorInput.type = "text";
-        colorInput.className = "allowed-color-value";
-        colorInput.required = true;
-        colorInput.placeholder = "colors/content/text/state/info";
-        colorInput.value = normalized.color;
-        setupInputOverflowTooltip(colorInput);
-        colorLabel.appendChild(colorInput);
-
-        const removeButton = document.createElement("button");
-        removeButton.type = "button";
-        removeButton.className = "icon-delete";
-        removeButton.appendChild(createTrashIcon());
-        removeButton.title = "Delete";
-        removeButton.setAttribute("aria-label", "Delete color");
-        removeButton.addEventListener("click", async (event) => {
-          event.preventDefault();
-          event.stopPropagation();
-          if (!hasInputValue(colorInput)) {
-            row.remove();
-            return;
-          }
-          const confirmed = await confirmDelete(
-            "Delete this never-flag color path?",
-            removeButton
-          );
-          if (!confirmed) return;
-          row.remove();
-        });
-
-        row.appendChild(colorLabel);
-        row.appendChild(removeButton);
-        return row;
-      }
-
-      function renderAlwaysAllowedColors(values) {
-        alwaysAllowedColorsContainer.innerHTML = "";
-        const list = Array.isArray(values) ? values : [];
-        for (let i = 0; i < list.length; i++) {
-          alwaysAllowedColorsContainer.appendChild(createAlwaysAllowedColorRow(list[i]));
-        }
-      }
-
-      function collectAlwaysAllowedColors() {
-        const rows = alwaysAllowedColorsContainer.querySelectorAll(".allowed-color-row");
-        const result = [];
-        const seen = new Set();
-        let hasIncompleteRow = false;
-
-        for (let i = 0; i < rows.length; i++) {
-          const row = rows[i];
-          const colorEl = row.querySelector(".allowed-color-value");
-          const color = colorEl ? colorEl.value.trim() : "";
-          if (!color) {
-            hasIncompleteRow = true;
-            continue;
-          }
-          const key = color.toLowerCase();
-          if (seen.has(key)) continue;
-          seen.add(key);
-          result.push(color);
-        }
-
-        return { result, hasIncompleteRow };
-      }
-
-      function normalizeTokenPathForComparison(value) {
-        let token = typeof value === "string" ? value.trim() : "";
-        while (token.length > 0 && token.charAt(token.length - 1) === "/") {
-          token = token.slice(0, token.length - 1);
-        }
-        return token;
-      }
-
-      function normalizeRenameRulesForComparison(values) {
-        const list = Array.isArray(values) ? values : [];
-        const result = [];
-        const seen = new Set();
-
-        for (let i = 0; i < list.length; i++) {
-          const row = list[i] && typeof list[i] === "object" ? list[i] : {};
-          const newName =
-            typeof row.newName === "string"
-              ? row.newName.trim()
-              : typeof row.layerName === "string"
-                ? row.layerName.trim()
-                : "";
-          const rawPath =
-            typeof row.path === "string"
-              ? row.path
-              : typeof row.color === "string"
-                ? row.color
-                : typeof row.value === "string"
-                  ? row.value
-                  : "";
-          const path = normalizeTokenPathForComparison(rawPath);
-          if (!newName || !path) continue;
-
-          const key = path.toLowerCase();
-          if (seen.has(key)) continue;
-          seen.add(key);
-          result.push({ newName, path });
-        }
-
-        return result;
-      }
-
-      function normalizeAlwaysAllowedColorsForComparison(values) {
-        const list = Array.isArray(values) ? values : [];
-        const result = [];
-        const seen = new Set();
-
-        for (let i = 0; i < list.length; i++) {
-          const row = normalizeAlwaysAllowedColorEntry(list[i]);
-          const color = row && typeof row.color === "string" ? row.color.trim() : "";
-          if (!color) continue;
-
-          const key = color.toLowerCase();
-          if (seen.has(key)) continue;
-          seen.add(key);
-          result.push(color);
-        }
-
-        return result;
-      }
-
-      function normalizeFrameLayerNameForComparison(value) {
-        const next = typeof value === "string" ? value.trim() : "";
-        return next || DEFAULT_FRAME_LAYER_NAME;
-      }
-
-      function buildSettingsSignature(payload) {
-        const source = payload && typeof payload === "object" ? payload : {};
-        return JSON.stringify({
-          frameLayerName: normalizeFrameLayerNameForComparison(source.frameLayerName),
-          renameRules: normalizeRenameRulesForComparison(source.renameRules),
-          alwaysAllowedColors: normalizeAlwaysAllowedColorsForComparison(
-            source.alwaysAllowedColors
-          ),
-        });
-      }
-
-      function requestInitialSettings() {
-        parent.postMessage(
-          {
-            pluginMessage: {
-              type: "settings-ui-ready",
-            },
-          },
-          "*"
-        );
-      }
-
-      function focusNewInput(row, selector) {
-        const input = row.querySelector(selector);
-        if (!(input instanceof HTMLInputElement)) return;
-        row.scrollIntoView({ block: "start" });
-        requestAnimationFrame(() => {
-          const scroller = document.scrollingElement || document.documentElement;
-          if (scroller) {
-            scroller.scrollTop = Math.max(0, scroller.scrollTop - 32);
-          }
-          try {
-            input.focus({ preventScroll: true });
-          } catch (_) {
-            input.focus();
-          }
-        });
-      }
-
-      window.onmessage = (event) => {
-        const message = event.data && event.data.pluginMessage;
-        if (!message || message.type !== "init-settings") return;
-
-        const payload = message.payload || {};
-        const initialPayload = {
-          frameLayerName: normalizeFrameLayerNameForComparison(payload.frameLayerName),
-          renameRules: payload.renameRules || [],
-          alwaysAllowedColors: payload.alwaysAllowedColors || [],
-        };
-        renderRenameRules(initialPayload.renameRules);
-        renderAlwaysAllowedColors(initialPayload.alwaysAllowedColors);
-        if (frameRenameInput) {
-          frameRenameInput.value = initialPayload.frameLayerName;
-          setupInputOverflowTooltip(frameRenameInput);
-        }
-        initialSettingsSignature = buildSettingsSignature(initialPayload);
-        requestAnimationFrame(refreshAllInputOverflowTooltips);
-      };
-
-      requestInitialSettings();
-
-      addRuleButton.addEventListener("click", () => {
-        const row = createRuleRow({ newName: "", path: "" });
-        renameRulesContainer.appendChild(row);
-        syncAllLayerNameInputSizes();
-        validateDuplicateRulePaths();
-        focusNewInput(row, ".rule-path");
-      });
-
-      renameRulesContainer.addEventListener("input", (event) => {
-        const target = event.target;
-        if (!(target instanceof HTMLInputElement)) return;
-        if (target.classList.contains("rule-path")) {
-          validateDuplicateRulePaths();
-        }
-        if (target.classList.contains("rule-layer-name")) {
-          syncAllLayerNameInputSizes();
-        }
-      });
-
-      addAllowedColorButton.addEventListener("click", () => {
-        const row = createAlwaysAllowedColorRow({ name: "", color: "" });
-        alwaysAllowedColorsContainer.appendChild(row);
-        focusNewInput(row, ".allowed-color-value");
-        refreshAllInputOverflowTooltips();
-      });
-
-      window.addEventListener("resize", () => {
-        refreshAllInputOverflowTooltips();
-      });
-
-      if (deleteModalCancelButton) {
-        deleteModalCancelButton.addEventListener("click", () => {
-          closeDeleteConfirm(false);
-        });
-      }
-
-      if (deleteModalConfirmButton) {
-        deleteModalConfirmButton.addEventListener("click", () => {
-          closeDeleteConfirm(true);
-        });
-      }
-
+    function closeDeleteConfirm(confirmed) {
       if (deleteConfirmModal) {
-        deleteConfirmModal.addEventListener("click", (event) => {
-          if (event.target === deleteConfirmModal) {
-            closeDeleteConfirm(false);
+        deleteConfirmModal.hidden = true;
+      }
+      if (deleteConfirmResolver) {
+        const resolver = deleteConfirmResolver;
+        deleteConfirmResolver = null;
+        resolver(confirmed);
+      }
+      if (deleteConfirmReturnFocus) {
+        try {
+          deleteConfirmReturnFocus.focus();
+        } catch (_) { }
+        deleteConfirmReturnFocus = null;
+      }
+    }
+
+    function confirmDelete(message, triggerElement) {
+      return new Promise((resolve) => {
+        if (!deleteConfirmModal || !deleteModalText) {
+          resolve(window.confirm(message));
+          return;
+        }
+
+        if (deleteConfirmResolver) {
+          const previous = deleteConfirmResolver;
+          deleteConfirmResolver = null;
+          previous(false);
+        }
+
+        deleteConfirmResolver = resolve;
+        deleteConfirmReturnFocus = triggerElement || null;
+        deleteModalText.textContent = message || "This action cannot be undone.";
+        deleteConfirmModal.hidden = false;
+        requestAnimationFrame(() => {
+          try {
+            deleteModalConfirmButton.focus({ preventScroll: true });
+          } catch (_) {
+            deleteModalConfirmButton.focus();
           }
         });
+      });
+    }
+
+    function validateDuplicateRulePaths() {
+      const pathInputs = renameRulesContainer.querySelectorAll(".rule-path");
+      const seen = new Map();
+      const duplicateInputs = new Set();
+
+      for (let i = 0; i < pathInputs.length; i++) {
+        const input = pathInputs[i];
+        input.classList.remove("input-error");
+        input.setCustomValidity("");
       }
 
-      window.addEventListener("keydown", (event) => {
-        if (event.key === "Escape" && deleteConfirmModal && !deleteConfirmModal.hidden) {
-          event.preventDefault();
+      for (let i = 0; i < pathInputs.length; i++) {
+        const input = pathInputs[i];
+        const key = normalizePathForDuplicateCheck(input.value);
+        if (!key) continue;
+        if (seen.has(key)) {
+          duplicateInputs.add(input);
+          duplicateInputs.add(seen.get(key));
+        } else {
+          seen.set(key, input);
+        }
+      }
+
+      duplicateInputs.forEach((input) => {
+        input.classList.add("input-error");
+        input.setCustomValidity("Duplicate path");
+      });
+
+      if (renameRulesError) {
+        renameRulesError.hidden = duplicateInputs.size === 0;
+      }
+      return duplicateInputs.size > 0;
+    }
+
+    function syncAllLayerNameInputSizes() {
+      const inputs = renameRulesContainer.querySelectorAll(".rule-layer-name");
+      let maxSize = MIN_LAYER_NAME_SIZE;
+      for (let i = 0; i < inputs.length; i++) {
+        const input = inputs[i];
+        if (!(input instanceof HTMLInputElement)) continue;
+        const sample = input.value || input.placeholder || "";
+        maxSize = Math.max(maxSize, sample.length + 1);
+      }
+      maxSize = Math.min(maxSize, MAX_LAYER_NAME_SIZE);
+      for (let i = 0; i < inputs.length; i++) {
+        const input = inputs[i];
+        if (!(input instanceof HTMLInputElement)) continue;
+        input.size = maxSize;
+      }
+      refreshAllInputOverflowTooltips();
+    }
+
+    function createRuleRow(entry) {
+      const row = document.createElement("div");
+      row.className = "rule-row";
+
+      const layerLabel = document.createElement("label");
+      const layerLabelText = document.createElement("span");
+      layerLabelText.textContent = "Layer name ";
+      const layerRequired = document.createElement("span");
+      layerRequired.className = "required-asterisk";
+      layerRequired.textContent = "*";
+      layerLabelText.appendChild(layerRequired);
+      layerLabel.appendChild(layerLabelText);
+      const layerInput = document.createElement("input");
+      layerInput.type = "text";
+      layerInput.className = "rule-layer-name";
+      layerInput.required = true;
+      layerInput.placeholder = "heading-text";
+      layerInput.value = (entry && entry.newName) || "";
+      setupInputOverflowTooltip(layerInput);
+      layerInput.addEventListener("input", () => {
+        syncAllLayerNameInputSizes();
+      });
+      layerLabel.appendChild(layerInput);
+
+      const pathLabel = document.createElement("label");
+      const pathLabelText = document.createElement("span");
+      pathLabelText.textContent = "Path ";
+      const pathRequired = document.createElement("span");
+      pathRequired.className = "required-asterisk";
+      pathRequired.textContent = "*";
+      pathLabelText.appendChild(pathRequired);
+      pathLabel.appendChild(pathLabelText);
+      const pathInput = document.createElement("input");
+      pathInput.type = "text";
+      pathInput.className = "rule-path";
+      pathInput.required = true;
+      pathInput.placeholder = "colors/content/text/regular/heading";
+      pathInput.value = (entry && entry.path) || "";
+      setupInputOverflowTooltip(pathInput);
+      pathLabel.appendChild(pathInput);
+
+      const removeButton = document.createElement("button");
+      removeButton.type = "button";
+      removeButton.className = "icon-delete";
+      removeButton.appendChild(createTrashIcon());
+      removeButton.title = "Delete";
+      removeButton.setAttribute("aria-label", "Delete rule");
+      removeButton.addEventListener("click", async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const hasLayerNameValue = hasInputValue(layerInput);
+        const hasPathValue = hasInputValue(pathInput);
+        if (!hasLayerNameValue && !hasPathValue) {
+          row.remove();
+          syncAllLayerNameInputSizes();
+          validateDuplicateRulePaths();
+          return;
+        }
+        const confirmed = await confirmDelete(
+          "Delete this rename and detection rule?",
+          removeButton
+        );
+        if (!confirmed) return;
+        row.remove();
+        syncAllLayerNameInputSizes();
+        validateDuplicateRulePaths();
+      });
+
+      row.appendChild(layerLabel);
+      row.appendChild(pathLabel);
+      row.appendChild(removeButton);
+      return row;
+    }
+
+    function renderRenameRules(entries) {
+      renameRulesContainer.innerHTML = "";
+      const list = Array.isArray(entries) ? entries : [];
+      for (let i = 0; i < list.length; i++) {
+        renameRulesContainer.appendChild(createRuleRow(list[i]));
+      }
+      syncAllLayerNameInputSizes();
+      validateDuplicateRulePaths();
+    }
+
+    function collectRenameRules() {
+      const rows = renameRulesContainer.querySelectorAll(".rule-row");
+      const result = [];
+      let hasIncompleteRow = false;
+      const seen = new Set();
+
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        const nameEl = row.querySelector(".rule-layer-name");
+        const pathEl = row.querySelector(".rule-path");
+        const newName = nameEl ? nameEl.value.trim() : "";
+        const path = pathEl ? pathEl.value.trim() : "";
+
+        if (!path && !newName) continue;
+        if (!path || !newName) {
+          hasIncompleteRow = true;
+          continue;
+        }
+
+        const key = path.toLowerCase();
+        if (seen.has(key)) continue;
+        seen.add(key);
+        result.push({ newName, path });
+      }
+
+      return { result, hasIncompleteRow };
+    }
+
+    function normalizeAlwaysAllowedColorEntry(entry) {
+      if (typeof entry === "string") {
+        const value = entry.trim();
+        if (!value) return { name: "", color: "" };
+        return { name: value, color: value };
+      }
+
+      const next = entry && typeof entry === "object" ? entry : {};
+      const name = typeof next.name === "string" ? next.name.trim() : "";
+      const color =
+        typeof next.color === "string"
+          ? next.color.trim()
+          : typeof next.value === "string"
+            ? next.value.trim()
+            : typeof next.path === "string"
+              ? next.path.trim()
+              : "";
+      return { name, color };
+    }
+
+    function createAlwaysAllowedColorRow(entry) {
+      const normalized = normalizeAlwaysAllowedColorEntry(entry);
+      const row = document.createElement("div");
+      row.className = "allowed-color-row";
+
+      const colorLabel = document.createElement("label");
+      const colorLabelText = document.createElement("span");
+      colorLabelText.textContent = "Path ";
+      const colorRequired = document.createElement("span");
+      colorRequired.className = "required-asterisk";
+      colorRequired.textContent = "*";
+      colorLabelText.appendChild(colorRequired);
+      colorLabel.appendChild(colorLabelText);
+      const colorInput = document.createElement("input");
+      colorInput.type = "text";
+      colorInput.className = "allowed-color-value";
+      colorInput.required = true;
+      colorInput.placeholder = "colors/content/text/state/info";
+      colorInput.value = normalized.color;
+      setupInputOverflowTooltip(colorInput);
+      colorLabel.appendChild(colorInput);
+
+      const removeButton = document.createElement("button");
+      removeButton.type = "button";
+      removeButton.className = "icon-delete";
+      removeButton.appendChild(createTrashIcon());
+      removeButton.title = "Delete";
+      removeButton.setAttribute("aria-label", "Delete color");
+      removeButton.addEventListener("click", async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (!hasInputValue(colorInput)) {
+          row.remove();
+          return;
+        }
+        const confirmed = await confirmDelete(
+          "Delete this never-flag color path?",
+          removeButton
+        );
+        if (!confirmed) return;
+        row.remove();
+      });
+
+      row.appendChild(colorLabel);
+      row.appendChild(removeButton);
+      return row;
+    }
+
+    function renderAlwaysAllowedColors(values) {
+      alwaysAllowedColorsContainer.innerHTML = "";
+      const list = Array.isArray(values) ? values : [];
+      for (let i = 0; i < list.length; i++) {
+        alwaysAllowedColorsContainer.appendChild(createAlwaysAllowedColorRow(list[i]));
+      }
+    }
+
+    function collectAlwaysAllowedColors() {
+      const rows = alwaysAllowedColorsContainer.querySelectorAll(".allowed-color-row");
+      const result = [];
+      const seen = new Set();
+      let hasIncompleteRow = false;
+
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        const colorEl = row.querySelector(".allowed-color-value");
+        const color = colorEl ? colorEl.value.trim() : "";
+        if (!color) {
+          hasIncompleteRow = true;
+          continue;
+        }
+        const key = color.toLowerCase();
+        if (seen.has(key)) continue;
+        seen.add(key);
+        result.push(color);
+      }
+
+      return { result, hasIncompleteRow };
+    }
+
+    function normalizeTokenPathForComparison(value) {
+      let token = typeof value === "string" ? value.trim() : "";
+      while (token.length > 0 && token.charAt(token.length - 1) === "/") {
+        token = token.slice(0, token.length - 1);
+      }
+      return token;
+    }
+
+    function normalizeRenameRulesForComparison(values) {
+      const list = Array.isArray(values) ? values : [];
+      const result = [];
+      const seen = new Set();
+
+      for (let i = 0; i < list.length; i++) {
+        const row = list[i] && typeof list[i] === "object" ? list[i] : {};
+        const newName =
+          typeof row.newName === "string"
+            ? row.newName.trim()
+            : typeof row.layerName === "string"
+              ? row.layerName.trim()
+              : "";
+        const rawPath =
+          typeof row.path === "string"
+            ? row.path
+            : typeof row.color === "string"
+              ? row.color
+              : typeof row.value === "string"
+                ? row.value
+                : "";
+        const path = normalizeTokenPathForComparison(rawPath);
+        if (!newName || !path) continue;
+
+        const key = path.toLowerCase();
+        if (seen.has(key)) continue;
+        seen.add(key);
+        result.push({ newName, path });
+      }
+
+      return result;
+    }
+
+    function normalizeAlwaysAllowedColorsForComparison(values) {
+      const list = Array.isArray(values) ? values : [];
+      const result = [];
+      const seen = new Set();
+
+      for (let i = 0; i < list.length; i++) {
+        const row = normalizeAlwaysAllowedColorEntry(list[i]);
+        const color = row && typeof row.color === "string" ? row.color.trim() : "";
+        if (!color) continue;
+
+        const key = color.toLowerCase();
+        if (seen.has(key)) continue;
+        seen.add(key);
+        result.push(color);
+      }
+
+      return result;
+    }
+
+    function normalizeFrameLayerNameForComparison(value) {
+      const next = typeof value === "string" ? value.trim() : "";
+      return next || DEFAULT_FRAME_LAYER_NAME;
+    }
+
+    function buildSettingsSignature(payload) {
+      const source = payload && typeof payload === "object" ? payload : {};
+      return JSON.stringify({
+        frameLayerName: normalizeFrameLayerNameForComparison(source.frameLayerName),
+        renameRules: normalizeRenameRulesForComparison(source.renameRules),
+        alwaysAllowedColors: normalizeAlwaysAllowedColorsForComparison(
+          source.alwaysAllowedColors
+        ),
+      });
+    }
+
+    function requestInitialSettings() {
+      parent.postMessage(
+        {
+          pluginMessage: {
+            type: "settings-ui-ready",
+          },
+        },
+        "*"
+      );
+    }
+
+    function focusNewInput(row, selector) {
+      const input = row.querySelector(selector);
+      if (!(input instanceof HTMLInputElement)) return;
+      row.scrollIntoView({ block: "start" });
+      requestAnimationFrame(() => {
+        const scroller = document.scrollingElement || document.documentElement;
+        if (scroller) {
+          scroller.scrollTop = Math.max(0, scroller.scrollTop - 32);
+        }
+        try {
+          input.focus({ preventScroll: true });
+        } catch (_) {
+          input.focus();
+        }
+      });
+    }
+
+    window.onmessage = (event) => {
+      const message = event.data && event.data.pluginMessage;
+      if (!message || message.type !== "init-settings") return;
+
+      const payload = message.payload || {};
+      const initialPayload = {
+        frameLayerName: normalizeFrameLayerNameForComparison(payload.frameLayerName),
+        renameRules: payload.renameRules || [],
+        alwaysAllowedColors: payload.alwaysAllowedColors || [],
+      };
+      renderRenameRules(initialPayload.renameRules);
+      renderAlwaysAllowedColors(initialPayload.alwaysAllowedColors);
+      if (frameRenameInput) {
+        frameRenameInput.value = initialPayload.frameLayerName;
+        setupInputOverflowTooltip(frameRenameInput);
+      }
+      initialSettingsSignature = buildSettingsSignature(initialPayload);
+      requestAnimationFrame(refreshAllInputOverflowTooltips);
+    };
+
+    requestInitialSettings();
+
+    addRuleButton.addEventListener("click", () => {
+      const row = createRuleRow({ newName: "", path: "" });
+      renameRulesContainer.appendChild(row);
+      syncAllLayerNameInputSizes();
+      validateDuplicateRulePaths();
+      focusNewInput(row, ".rule-path");
+    });
+
+    renameRulesContainer.addEventListener("input", (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLInputElement)) return;
+      if (target.classList.contains("rule-path")) {
+        validateDuplicateRulePaths();
+      }
+      if (target.classList.contains("rule-layer-name")) {
+        syncAllLayerNameInputSizes();
+      }
+    });
+
+    addAllowedColorButton.addEventListener("click", () => {
+      const row = createAlwaysAllowedColorRow({ name: "", color: "" });
+      alwaysAllowedColorsContainer.appendChild(row);
+      focusNewInput(row, ".allowed-color-value");
+      refreshAllInputOverflowTooltips();
+    });
+
+    window.addEventListener("resize", () => {
+      refreshAllInputOverflowTooltips();
+    });
+
+    if (deleteModalCancelButton) {
+      deleteModalCancelButton.addEventListener("click", () => {
+        closeDeleteConfirm(false);
+      });
+    }
+
+    if (deleteModalConfirmButton) {
+      deleteModalConfirmButton.addEventListener("click", () => {
+        closeDeleteConfirm(true);
+      });
+    }
+
+    if (deleteConfirmModal) {
+      deleteConfirmModal.addEventListener("click", (event) => {
+        if (event.target === deleteConfirmModal) {
           closeDeleteConfirm(false);
         }
       });
+    }
 
-      cancelButton.addEventListener("click", () => {
-        parent.postMessage({ pluginMessage: { type: "cancel-settings" } }, "*");
-      });
-
-      form.addEventListener("submit", (event) => {
+    window.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && deleteConfirmModal && !deleteConfirmModal.hidden) {
         event.preventDefault();
-        const renameRules = collectRenameRules();
-        const alwaysAllowedColors = collectAlwaysAllowedColors();
-        if (validateDuplicateRulePaths()) {
-          showToast("Duplicate path in rename rules.");
-          return;
-        }
-        if (renameRules.hasIncompleteRow) {
-          showToast("Fill in layer name and path for each rule.");
-          return;
-        }
-        if (renameRules.result.length === 0) {
-          showToast("Add at least one rename rule.");
-          return;
-        }
-        if (alwaysAllowedColors.hasIncompleteRow) {
-          showToast("Fill in a path for each never-flag item.");
-          return;
-        }
-        const frameLayerName = frameRenameInput ? frameRenameInput.value.trim() : "";
-        if (!frameLayerName) {
-          showToast("Enter frame layer name.");
-          return;
-        }
+        closeDeleteConfirm(false);
+      }
+    });
 
-        const nextPayload = {
-          frameLayerName,
-          renameRules: renameRules.result,
-          alwaysAllowedColors: alwaysAllowedColors.result,
-        };
-        if (buildSettingsSignature(nextPayload) === initialSettingsSignature) {
-          showToast("No changes made.");
-          return;
-        }
+    cancelButton.addEventListener("click", () => {
+      parent.postMessage({ pluginMessage: { type: "cancel-settings" } }, "*");
+    });
 
-        parent.postMessage(
-          {
-            pluginMessage: {
-              type: "save-settings",
-              payload: nextPayload,
-            },
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const renameRules = collectRenameRules();
+      const alwaysAllowedColors = collectAlwaysAllowedColors();
+      if (validateDuplicateRulePaths()) {
+        showToast("Duplicate path in rename rules.");
+        return;
+      }
+      if (renameRules.hasIncompleteRow) {
+        showToast("Fill in layer name and path for each rule.");
+        return;
+      }
+      if (renameRules.result.length === 0) {
+        showToast("Add at least one rename rule.");
+        return;
+      }
+      if (alwaysAllowedColors.hasIncompleteRow) {
+        showToast("Fill in a path for each never-flag item.");
+        return;
+      }
+      const frameLayerName = frameRenameInput ? frameRenameInput.value.trim() : "";
+      if (!frameLayerName) {
+        showToast("Enter frame layer name.");
+        return;
+      }
+
+      const nextPayload = {
+        frameLayerName,
+        renameRules: renameRules.result,
+        alwaysAllowedColors: alwaysAllowedColors.result,
+      };
+      if (buildSettingsSignature(nextPayload) === initialSettingsSignature) {
+        showToast("No changes made.");
+        return;
+      }
+
+      parent.postMessage(
+        {
+          pluginMessage: {
+            type: "save-settings",
+            payload: nextPayload,
           },
-          "*"
-        );
-      });
-    </script>
-  </body>
-</html>
+        },
+        "*"
+      );
+    });
+  </script>
+</body>
 
+</html>
